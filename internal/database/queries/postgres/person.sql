@@ -58,17 +58,16 @@ WHERE
     AND ($2::timestamptz IS NULL OR p.aktualisiert <= $2)
     AND ($3::date IS NULL OR p.basisdatum >= $3)
     AND ($4::date IS NULL OR p.datum <= $4)
-    AND ($5::int IS NULL OR p.wahlperiode = $5)
-    AND ($6::text IS NULL OR p.nachname ILIKE '%' || $6 || '%')
+    AND ($5::text IS NULL OR p.nachname ILIKE '%' || $5 || '%')
 GROUP BY p.id
 ORDER BY p.nachname, p.vorname
-LIMIT $7 OFFSET $8;
+LIMIT $6 OFFSET $7;
 
 -- name: CreatePerson :one
 INSERT INTO person (
     id, vorname, nachname, namenszusatz, titel, typ,
-    aktualisiert, basisdatum, datum, wahlperiode
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    aktualisiert, basisdatum, datum
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 RETURNING *;
 
 -- name: UpdatePerson :one
@@ -81,10 +80,23 @@ SET
     aktualisiert = $6,
     basisdatum = $7,
     datum = $8,
-    wahlperiode = $9,
     updated_at = NOW()
 WHERE id = $1
 RETURNING *;
+
+-- name: CreatePersonWahlperiode :exec
+INSERT INTO person_wahlperiode (person_id, wahlperiode_nummer)
+VALUES ($1, $2)
+ON CONFLICT (person_id, wahlperiode_nummer) DO NOTHING;
+
+-- name: GetPersonWahlperioden :many
+SELECT wahlperiode_nummer
+FROM person_wahlperiode
+WHERE person_id = $1
+ORDER BY wahlperiode_nummer;
+
+-- name: DeletePersonWahlperioden :exec
+DELETE FROM person_wahlperiode WHERE person_id = $1;
 
 -- name: DeletePerson :exec
 DELETE FROM person WHERE id = $1;
@@ -108,5 +120,4 @@ WHERE
     AND ($2::timestamptz IS NULL OR aktualisiert <= $2)
     AND ($3::date IS NULL OR basisdatum >= $3)
     AND ($4::date IS NULL OR datum <= $4)
-    AND ($5::int IS NULL OR wahlperiode = $5)
-    AND ($6::text IS NULL OR nachname ILIKE '%' || $6 || '%');
+    AND ($5::text IS NULL OR nachname ILIKE '%' || $5 || '%');

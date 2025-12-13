@@ -34,6 +34,7 @@ type Querier interface {
 	CreatePerson(ctx context.Context, arg CreatePersonParams) (Person, error)
 	CreatePersonRole(ctx context.Context, arg CreatePersonRoleParams) (PersonRole, error)
 	CreatePersonRoleWahlperiode(ctx context.Context, arg CreatePersonRoleWahlperiodeParams) error
+	CreatePersonWahlperiode(ctx context.Context, arg CreatePersonWahlperiodeParams) error
 	CreatePlenarprotokoll(ctx context.Context, arg CreatePlenarprotokollParams) (Plenarprotokoll, error)
 	CreatePlenarprotokollText(ctx context.Context, arg CreatePlenarprotokollTextParams) (PlenarprotokollText, error)
 	CreatePlenarprotokollVorgangsbezug(ctx context.Context, arg CreatePlenarprotokollVorgangsbezugParams) error
@@ -53,6 +54,7 @@ type Querier interface {
 	DeleteDrucksache(ctx context.Context, id string) error
 	DeleteDrucksacheText(ctx context.Context, id string) error
 	DeletePerson(ctx context.Context, id string) error
+	DeletePersonWahlperioden(ctx context.Context, personID string) error
 	DeletePlenarprotokoll(ctx context.Context, id string) error
 	DeletePlenarprotokollText(ctx context.Context, id string) error
 	DeleteVorgang(ctx context.Context, id string) error
@@ -70,6 +72,7 @@ type Querier interface {
 	GetOrCreateUrheber(ctx context.Context, arg GetOrCreateUrheberParams) (Urheber, error)
 	GetOrCreateWahlperiode(ctx context.Context, nummer int64) (Wahlperiode, error)
 	GetPerson(ctx context.Context, id string) (Person, error)
+	GetPersonWahlperioden(ctx context.Context, personID string) ([]int64, error)
 	GetPersonWithRoles(ctx context.Context, id string) ([]GetPersonWithRolesRow, error)
 	GetPlenarprotokoll(ctx context.Context, id string) (Plenarprotokoll, error)
 	GetPlenarprotokollText(ctx context.Context, id string) (GetPlenarprotokollTextRow, error)

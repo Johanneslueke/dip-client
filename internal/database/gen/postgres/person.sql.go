@@ -18,8 +18,7 @@ WHERE
     AND ($2::timestamptz IS NULL OR aktualisiert <= $2)
     AND ($3::date IS NULL OR basisdatum >= $3)
     AND ($4::date IS NULL OR datum <= $4)
-    AND ($5::int IS NULL OR wahlperiode = $5)
-    AND ($6::text IS NULL OR nachname ILIKE '%' || $6 || '%')
+    AND ($5::text IS NULL OR nachname ILIKE '%' || $5 || '%')
 `
 
 type CountPersonenParams struct {
@@ -27,8 +26,7 @@ type CountPersonenParams struct {
 	Column2 time.Time `json:"column_2"`
 	Column3 time.Time `json:"column_3"`
 	Column4 time.Time `json:"column_4"`
-	Column5 int32     `json:"column_5"`
-	Column6 string    `json:"column_6"`
+	Column5 string    `json:"column_5"`
 }
 
 func (q *Queries) CountPersonen(ctx context.Context, arg CountPersonenParams) (int64, error) {
@@ -38,7 +36,6 @@ func (q *Queries) CountPersonen(ctx context.Context, arg CountPersonenParams) (i
 		arg.Column3,
 		arg.Column4,
 		arg.Column5,
-		arg.Column6,
 	)
 	var count int64
 	err := row.Scan(&count)
@@ -48,9 +45,9 @@ func (q *Queries) CountPersonen(ctx context.Context, arg CountPersonenParams) (i
 const createPerson = `-- name: CreatePerson :one
 INSERT INTO person (
     id, vorname, nachname, namenszusatz, titel, typ,
-    aktualisiert, basisdatum, datum, wahlperiode
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-RETURNING id, vorname, nachname, namenszusatz, titel, typ, aktualisiert, basisdatum, datum, wahlperiode, created_at, updated_at
+    aktualisiert, basisdatum, datum
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+RETURNING id, vorname, nachname, namenszusatz, titel, typ, aktualisiert, basisdatum, datum, created_at, updated_at
 `
 
 type CreatePersonParams struct {
@@ -63,7 +60,6 @@ type CreatePersonParams struct {
 	Aktualisiert time.Time      `json:"aktualisiert"`
 	Basisdatum   sql.NullTime   `json:"basisdatum"`
 	Datum        sql.NullTime   `json:"datum"`
-	Wahlperiode  sql.NullInt32  `json:"wahlperiode"`
 }
 
 func (q *Queries) CreatePerson(ctx context.Context, arg CreatePersonParams) (Person, error) {
@@ -77,7 +73,6 @@ func (q *Queries) CreatePerson(ctx context.Context, arg CreatePersonParams) (Per
 		arg.Aktualisiert,
 		arg.Basisdatum,
 		arg.Datum,
-		arg.Wahlperiode,
 	)
 	var i Person
 	err := row.Scan(
@@ -90,7 +85,6 @@ func (q *Queries) CreatePerson(ctx context.Context, arg CreatePersonParams) (Per
 		&i.Aktualisiert,
 		&i.Basisdatum,
 		&i.Datum,
-		&i.Wahlperiode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -166,6 +160,22 @@ func (q *Queries) CreatePersonRoleWahlperiode(ctx context.Context, arg CreatePer
 	return err
 }
 
+const createPersonWahlperiode = `-- name: CreatePersonWahlperiode :exec
+INSERT INTO person_wahlperiode (person_id, wahlperiode_nummer)
+VALUES ($1, $2)
+ON CONFLICT (person_id, wahlperiode_nummer) DO NOTHING
+`
+
+type CreatePersonWahlperiodeParams struct {
+	PersonID          string `json:"person_id"`
+	WahlperiodeNummer int32  `json:"wahlperiode_nummer"`
+}
+
+func (q *Queries) CreatePersonWahlperiode(ctx context.Context, arg CreatePersonWahlperiodeParams) error {
+	_, err := q.db.ExecContext(ctx, createPersonWahlperiode, arg.PersonID, arg.WahlperiodeNummer)
+	return err
+}
+
 const deletePerson = `-- name: DeletePerson :exec
 DELETE FROM person WHERE id = $1
 `
@@ -175,9 +185,18 @@ func (q *Queries) DeletePerson(ctx context.Context, id string) error {
 	return err
 }
 
+const deletePersonWahlperioden = `-- name: DeletePersonWahlperioden :exec
+DELETE FROM person_wahlperiode WHERE person_id = $1
+`
+
+func (q *Queries) DeletePersonWahlperioden(ctx context.Context, personID string) error {
+	_, err := q.db.ExecContext(ctx, deletePersonWahlperioden, personID)
+	return err
+}
+
 const getPerson = `-- name: GetPerson :one
 SELECT 
-    p.id, p.vorname, p.nachname, p.namenszusatz, p.titel, p.typ, p.aktualisiert, p.basisdatum, p.datum, p.wahlperiode, p.created_at, p.updated_at,
+    p.id, p.vorname, p.nachname, p.namenszusatz, p.titel, p.typ, p.aktualisiert, p.basisdatum, p.datum, p.created_at, p.updated_at,
     COALESCE(
         json_agg(
             DISTINCT jsonb_build_object(
@@ -215,7 +234,6 @@ type GetPersonRow struct {
 	Aktualisiert time.Time      `json:"aktualisiert"`
 	Basisdatum   sql.NullTime   `json:"basisdatum"`
 	Datum        sql.NullTime   `json:"datum"`
-	Wahlperiode  sql.NullInt32  `json:"wahlperiode"`
 	CreatedAt    time.Time      `json:"created_at"`
 	UpdatedAt    time.Time      `json:"updated_at"`
 	PersonRoles  interface{}    `json:"person_roles"`
@@ -234,7 +252,6 @@ func (q *Queries) GetPerson(ctx context.Context, id string) (GetPersonRow, error
 		&i.Aktualisiert,
 		&i.Basisdatum,
 		&i.Datum,
-		&i.Wahlperiode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.PersonRoles,
@@ -242,9 +259,39 @@ func (q *Queries) GetPerson(ctx context.Context, id string) (GetPersonRow, error
 	return i, err
 }
 
+const getPersonWahlperioden = `-- name: GetPersonWahlperioden :many
+SELECT wahlperiode_nummer
+FROM person_wahlperiode
+WHERE person_id = $1
+ORDER BY wahlperiode_nummer
+`
+
+func (q *Queries) GetPersonWahlperioden(ctx context.Context, personID string) ([]int32, error) {
+	rows, err := q.db.QueryContext(ctx, getPersonWahlperioden, personID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int32
+	for rows.Next() {
+		var wahlperiode_nummer int32
+		if err := rows.Scan(&wahlperiode_nummer); err != nil {
+			return nil, err
+		}
+		items = append(items, wahlperiode_nummer)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listPersonen = `-- name: ListPersonen :many
 SELECT 
-    p.id, p.vorname, p.nachname, p.namenszusatz, p.titel, p.typ, p.aktualisiert, p.basisdatum, p.datum, p.wahlperiode, p.created_at, p.updated_at,
+    p.id, p.vorname, p.nachname, p.namenszusatz, p.titel, p.typ, p.aktualisiert, p.basisdatum, p.datum, p.created_at, p.updated_at,
     COALESCE(
         json_agg(
             DISTINCT jsonb_build_object(
@@ -273,11 +320,10 @@ WHERE
     AND ($2::timestamptz IS NULL OR p.aktualisiert <= $2)
     AND ($3::date IS NULL OR p.basisdatum >= $3)
     AND ($4::date IS NULL OR p.datum <= $4)
-    AND ($5::int IS NULL OR p.wahlperiode = $5)
-    AND ($6::text IS NULL OR p.nachname ILIKE '%' || $6 || '%')
+    AND ($5::text IS NULL OR p.nachname ILIKE '%' || $5 || '%')
 GROUP BY p.id
 ORDER BY p.nachname, p.vorname
-LIMIT $7 OFFSET $8
+LIMIT $6 OFFSET $7
 `
 
 type ListPersonenParams struct {
@@ -285,8 +331,7 @@ type ListPersonenParams struct {
 	Column2 time.Time `json:"column_2"`
 	Column3 time.Time `json:"column_3"`
 	Column4 time.Time `json:"column_4"`
-	Column5 int32     `json:"column_5"`
-	Column6 string    `json:"column_6"`
+	Column5 string    `json:"column_5"`
 	Limit   int32     `json:"limit"`
 	Offset  int32     `json:"offset"`
 }
@@ -301,7 +346,6 @@ type ListPersonenRow struct {
 	Aktualisiert time.Time      `json:"aktualisiert"`
 	Basisdatum   sql.NullTime   `json:"basisdatum"`
 	Datum        sql.NullTime   `json:"datum"`
-	Wahlperiode  sql.NullInt32  `json:"wahlperiode"`
 	CreatedAt    time.Time      `json:"created_at"`
 	UpdatedAt    time.Time      `json:"updated_at"`
 	PersonRoles  interface{}    `json:"person_roles"`
@@ -314,7 +358,6 @@ func (q *Queries) ListPersonen(ctx context.Context, arg ListPersonenParams) ([]L
 		arg.Column3,
 		arg.Column4,
 		arg.Column5,
-		arg.Column6,
 		arg.Limit,
 		arg.Offset,
 	)
@@ -335,7 +378,6 @@ func (q *Queries) ListPersonen(ctx context.Context, arg ListPersonenParams) ([]L
 			&i.Aktualisiert,
 			&i.Basisdatum,
 			&i.Datum,
-			&i.Wahlperiode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.PersonRoles,
@@ -363,10 +405,9 @@ SET
     aktualisiert = $6,
     basisdatum = $7,
     datum = $8,
-    wahlperiode = $9,
     updated_at = NOW()
 WHERE id = $1
-RETURNING id, vorname, nachname, namenszusatz, titel, typ, aktualisiert, basisdatum, datum, wahlperiode, created_at, updated_at
+RETURNING id, vorname, nachname, namenszusatz, titel, typ, aktualisiert, basisdatum, datum, created_at, updated_at
 `
 
 type UpdatePersonParams struct {
@@ -378,7 +419,6 @@ type UpdatePersonParams struct {
 	Aktualisiert time.Time      `json:"aktualisiert"`
 	Basisdatum   sql.NullTime   `json:"basisdatum"`
 	Datum        sql.NullTime   `json:"datum"`
-	Wahlperiode  sql.NullInt32  `json:"wahlperiode"`
 }
 
 func (q *Queries) UpdatePerson(ctx context.Context, arg UpdatePersonParams) (Person, error) {
@@ -391,7 +431,6 @@ func (q *Queries) UpdatePerson(ctx context.Context, arg UpdatePersonParams) (Per
 		arg.Aktualisiert,
 		arg.Basisdatum,
 		arg.Datum,
-		arg.Wahlperiode,
 	)
 	var i Person
 	err := row.Scan(
@@ -404,7 +443,6 @@ func (q *Queries) UpdatePerson(ctx context.Context, arg UpdatePersonParams) (Per
 		&i.Aktualisiert,
 		&i.Basisdatum,
 		&i.Datum,
-		&i.Wahlperiode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

@@ -187,7 +187,6 @@ type Person struct {
 	Aktualisiert time.Time      `json:"aktualisiert"`
 	Basisdatum   sql.NullTime   `json:"basisdatum"`
 	Datum        sql.NullTime   `json:"datum"`
-	Wahlperiode  sql.NullInt32  `json:"wahlperiode"`
 	CreatedAt    time.Time      `json:"created_at"`
 	UpdatedAt    time.Time      `json:"updated_at"`
 }
@@ -211,6 +210,12 @@ type PersonRole struct {
 type PersonRoleWahlperiode struct {
 	PersonRoleID      int32 `json:"person_role_id"`
 	WahlperiodeNummer int32 `json:"wahlperiode_nummer"`
+}
+
+type PersonWahlperiode struct {
+	PersonID          string    `json:"person_id"`
+	WahlperiodeNummer int32     `json:"wahlperiode_nummer"`
+	CreatedAt         time.Time `json:"created_at"`
 }
 
 type Plenarprotokoll struct {

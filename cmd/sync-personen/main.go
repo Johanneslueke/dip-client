@@ -8,13 +8,13 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 	"sync"
 	"time"
 
 	db "github.com/Johanneslueke/dip-client/internal/database/gen/sqlite"
 	dipclient "github.com/Johanneslueke/dip-client/pkg/dip-client"
 	"github.com/oapi-codegen/runtime/types"
+	"github.com/pressly/goose/v3"
 	_ "modernc.org/sqlite"
 )
 
@@ -194,50 +194,18 @@ done:
 }
 
 func runMigrations(sqlDB *sql.DB) error {
-	// Check if tables already exist
-	var count int
-	err := sqlDB.QueryRow("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='person'").Scan(&count)
-	if err != nil {
-		return fmt.Errorf("failed to check if tables exist: %w", err)
+	// Set goose dialect
+	if err := goose.SetDialect("sqlite3"); err != nil {
+		return fmt.Errorf("failed to set goose dialect: %w", err)
 	}
 
-	if count > 0 {
-		log.Printf("Tables already exist, skipping migration")
-		return nil
+	// Run migrations from the migrations directory
+	migrationsDir := "internal/database/migrations/sqlite"
+	if err := goose.Up(sqlDB, migrationsDir); err != nil {
+		return fmt.Errorf("failed to run migrations: %w", err)
 	}
 
-	// Read migration file
-	migrationSQL, err := os.ReadFile("internal/database/migrations/sqlite/0001_init.sql")
-	if err != nil {
-		return fmt.Errorf("failed to read migration file: %w", err)
-	}
-
-	// Extract just the Up section (between -- +goose Up and -- +goose Down)
-	content := string(migrationSQL)
-	upStart := strings.Index(content, "-- +goose Up")
-	downStart := strings.Index(content, "-- +goose Down")
-
-	if upStart == -1 {
-		return fmt.Errorf("migration file missing '-- +goose Up' marker")
-	}
-
-	var upSQL string
-	if downStart != -1 {
-		upSQL = content[upStart:downStart]
-	} else {
-		upSQL = content[upStart:]
-	}
-
-	// Remove the goose Up marker
-	upSQL = strings.Replace(upSQL, "-- +goose Up", "", 1)
-	upSQL = strings.TrimSpace(upSQL)
-
-	// Execute migration
-	if _, err := sqlDB.Exec(upSQL); err != nil {
-		return fmt.Errorf("failed to execute migration: %w", err)
-	}
-
-	log.Printf("Successfully ran database migrations")
+	log.Printf("Successfully ran all database migrations")
 	return nil
 }
 
@@ -265,13 +233,6 @@ func storePerson(ctx context.Context, q *db.Queries, person PersonWithArrayWahlp
 		datum.String = person.Datum.String()
 	}
 
-	// Use first wahlperiode if available
-	var wahlperiode sql.NullInt64
-	if person.WahlperiodeArray != nil && len(*person.WahlperiodeArray) > 0 {
-		wahlperiode.Valid = true
-		wahlperiode.Int64 = int64((*person.WahlperiodeArray)[0])
-	}
-
 	var namenszusatz sql.NullString
 	if person.Namenszusatz != nil {
 		namenszusatz.Valid = true
@@ -289,7 +250,6 @@ func storePerson(ctx context.Context, q *db.Queries, person PersonWithArrayWahlp
 		Aktualisiert: aktualisiert,
 		Basisdatum:   basisdatum,
 		Datum:        datum,
-		Wahlperiode:  wahlperiode,
 	})
 	if err != nil {
 		// Person might already exist - try to update
@@ -302,10 +262,21 @@ func storePerson(ctx context.Context, q *db.Queries, person PersonWithArrayWahlp
 			Aktualisiert: aktualisiert,
 			Basisdatum:   basisdatum,
 			Datum:        datum,
-			Wahlperiode:  wahlperiode,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to create or update person: %w", err)
+		}
+	}
+
+	// Store wahlperiode associations
+	if person.WahlperiodeArray != nil {
+		for _, wp := range *person.WahlperiodeArray {
+			if err := q.CreatePersonWahlperiode(ctx, db.CreatePersonWahlperiodeParams{
+				PersonID:          person.Id,
+				WahlperiodeNummer: int64(wp),
+			}); err != nil {
+				log.Printf("Warning: Failed to link person %s to wahlperiode %d: %v", person.Id, wp, err)
+			}
 		}
 	}
 

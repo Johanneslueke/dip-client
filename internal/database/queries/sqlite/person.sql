@@ -28,7 +28,6 @@ WHERE
     AND (? IS NULL OR aktualisiert <= ?)
     AND (? IS NULL OR basisdatum >= ?)
     AND (? IS NULL OR datum <= ?)
-    AND (? IS NULL OR wahlperiode = ?)
     AND (? IS NULL OR nachname LIKE '%' || ? || '%')
 ORDER BY nachname, vorname
 LIMIT ? OFFSET ?;
@@ -36,8 +35,8 @@ LIMIT ? OFFSET ?;
 -- name: CreatePerson :one
 INSERT INTO person (
     id, vorname, nachname, namenszusatz, titel, typ,
-    aktualisiert, basisdatum, datum, wahlperiode
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    aktualisiert, basisdatum, datum
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: UpdatePerson :one
@@ -50,10 +49,23 @@ SET
     aktualisiert = ?,
     basisdatum = ?,
     datum = ?,
-    wahlperiode = ?,
     updated_at = datetime('now')
 WHERE id = ?
 RETURNING *;
+
+-- name: CreatePersonWahlperiode :exec
+INSERT INTO person_wahlperiode (person_id, wahlperiode_nummer)
+VALUES (?, ?)
+ON CONFLICT (person_id, wahlperiode_nummer) DO NOTHING;
+
+-- name: GetPersonWahlperioden :many
+SELECT wahlperiode_nummer
+FROM person_wahlperiode
+WHERE person_id = ?
+ORDER BY wahlperiode_nummer;
+
+-- name: DeletePersonWahlperioden :exec
+DELETE FROM person_wahlperiode WHERE person_id = ?;
 
 -- name: DeletePerson :exec
 DELETE FROM person WHERE id = ?;
@@ -77,5 +89,4 @@ WHERE
     AND (? IS NULL OR aktualisiert <= ?)
     AND (? IS NULL OR basisdatum >= ?)
     AND (? IS NULL OR datum <= ?)
-    AND (? IS NULL OR wahlperiode = ?)
     AND (? IS NULL OR nachname LIKE '%' || ? || '%');
