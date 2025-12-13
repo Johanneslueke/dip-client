@@ -8,67 +8,14 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"sync"
 	"time"
 
 	db "github.com/Johanneslueke/dip-client/internal/database/gen/sqlite"
+	"github.com/Johanneslueke/dip-client/internal/utility"
 	dipclient "github.com/Johanneslueke/dip-client/pkg/dip-client"
 	"github.com/oapi-codegen/runtime/types"
-	"github.com/pressly/goose/v3"
 	_ "modernc.org/sqlite"
 )
-
-// rateLimiter limits API requests to less than 24 per minute
-type rateLimiter struct {
-	tokens     int
-	maxTokens  int
-	interval   time.Duration
-	lastRefill time.Time
-	mu         sync.Mutex
-}
-
-func newRateLimiter(maxRequests int, interval time.Duration) *rateLimiter {
-	return &rateLimiter{
-		tokens:     maxRequests,
-		maxTokens:  maxRequests,
-		interval:   interval,
-		lastRefill: time.Now(),
-	}
-}
-
-func (rl *rateLimiter) Wait(ctx context.Context) error {
-	rl.mu.Lock()
-	defer rl.mu.Unlock()
-
-	for {
-		now := time.Now()
-		elapsed := now.Sub(rl.lastRefill)
-
-		// Refill tokens based on elapsed time
-		if elapsed >= rl.interval {
-			rl.tokens = rl.maxTokens
-			rl.lastRefill = now
-		}
-
-		// If we have tokens available, consume one and return
-		if rl.tokens > 0 {
-			rl.tokens--
-			return nil
-		}
-
-		// Calculate wait time until next refill
-		waitTime := rl.interval - elapsed
-		rl.mu.Unlock()
-
-		select {
-		case <-ctx.Done():
-			rl.mu.Lock()
-			return ctx.Err()
-		case <-time.After(waitTime):
-			rl.mu.Lock()
-		}
-	}
-}
 
 // PersonWithArrayWahlperiode handles the API response where wahlperiode is an array
 type PersonWithArrayWahlperiode struct {
@@ -119,7 +66,7 @@ func main() {
 	defer sqlDB.Close()
 
 	// Run migrations
-	if err := runMigrations(sqlDB); err != nil {
+	if err := utility.RunMigrations(sqlDB); err != nil {
 		log.Fatalf("Failed to run migrations: %v", err)
 	}
 
@@ -127,7 +74,8 @@ func main() {
 	ctx := context.Background()
 
 	// Initialize rate limiter: 23 requests per minute (leaving 1 request buffer)
-	limiter := newRateLimiter(23, time.Minute)
+	limiter := utility.NewRateLimiter(23, time.Minute)
+	progress := utility.NewProgressTracker(*limit)
 
 	// Fetch and store persons
 	var cursor *string
@@ -165,6 +113,9 @@ func main() {
 		log.Printf("Fetched %d persons (total so far: %d, API reports %d total)",
 			len(result.Documents), totalFetched+len(result.Documents), result.NumFound)
 
+		progress.PrintProgress(totalFetched+len(result.Documents), int(result.NumFound))
+
+
 		// Store each person
 		for _, person := range result.Documents {
 			if err := storePerson(ctx, queries, person); err != nil {
@@ -172,8 +123,9 @@ func main() {
 				continue
 			}
 			personCount++
+			progress.Increment()
 
-			if *limit > 0 && personCount >= *limit {
+			if *limit > 0 && progress.Total >= *limit {
 				log.Printf("Reached limit of %d persons", *limit)
 				goto done
 			}
@@ -190,24 +142,13 @@ func main() {
 	}
 
 done:
-	log.Printf("Successfully stored %d persons in database %s", personCount, *dbPath)
+	fmt.Println() // New line after progress updates
+	elapsed, rate := progress.GetStats()
+	log.Printf("Successfully stored %d vorgänge in database %s (%.1f/sec, took %s)",
+		progress.Total, *dbPath, rate, elapsed.Round(time.Second))
 }
 
-func runMigrations(sqlDB *sql.DB) error {
-	// Set goose dialect
-	if err := goose.SetDialect("sqlite3"); err != nil {
-		return fmt.Errorf("failed to set goose dialect: %w", err)
-	}
-
-	// Run migrations from the migrations directory
-	migrationsDir := "internal/database/migrations/sqlite"
-	if err := goose.Up(sqlDB, migrationsDir); err != nil {
-		return fmt.Errorf("failed to run migrations: %w", err)
-	}
-
-	log.Printf("Successfully ran all database migrations")
-	return nil
-}
+ 
 
 func storePerson(ctx context.Context, q *db.Queries, person PersonWithArrayWahlperiode) error {
 	// Ensure wahlperioden exist (use array if available)

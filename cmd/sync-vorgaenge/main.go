@@ -14,72 +14,12 @@ import (
 	"github.com/Johanneslueke/dip-client/internal/utility"
 	dipclient "github.com/Johanneslueke/dip-client/pkg/dip-client"
 	openapi_types "github.com/oapi-codegen/runtime/types"
-	"github.com/pressly/goose/v3"
 	_ "modernc.org/sqlite"
 )
 
 
 
-type progressTracker struct {
-	startTime time.Time
-	total     int
-	limit     int
-}
 
-func newProgressTracker(limit int) *progressTracker {
-	return &progressTracker{
-		startTime: time.Now(),
-		limit:     limit,
-	}
-}
-
-func (pt *progressTracker) formatDuration(d time.Duration) string {
-	if d.Hours() >= 1 {
-		hours := int(d.Hours())
-		minutes := int(d.Minutes()) % 60
-		return fmt.Sprintf("%dh%dm", hours, minutes)
-	}
-	return fmt.Sprintf("%.0fm", d.Minutes())
-}
-
-func (pt *progressTracker) printProgress(current, totalAvailable int) {
-	elapsed := time.Since(pt.startTime)
-	rate := float64(pt.total) / elapsed.Seconds()
-	
-	timeStr := pt.formatDuration(elapsed)
-	
-	// Calculate estimated remaining time
-	var etaStr string
-	if rate > 0 && current > 0 {
-		remaining := totalAvailable - current
-		if pt.limit > 0 && pt.limit < totalAvailable {
-			remaining = pt.limit - current
-		}
-		if remaining > 0 {
-			etaSeconds := float64(remaining) / rate
-			etaDuration := time.Duration(etaSeconds) * time.Second
-			etaStr = fmt.Sprintf(", ETA %s", pt.formatDuration(etaDuration))
-		}
-	}
-	
-	fmt.Printf("\rFetched %d vorgänge (%.1f/sec, %.1f%% of %d total, %s%s)    ",
-		current,
-		rate,
-		float64(current)/float64(totalAvailable)*100,
-		totalAvailable,
-		timeStr,
-		etaStr)
-}
-
-func (pt *progressTracker) increment() {
-	pt.total++
-}
-
-func (pt *progressTracker) getStats() (elapsed time.Duration, rate float64) {
-	elapsed = time.Since(pt.startTime)
-	rate = float64(pt.total) / elapsed.Seconds()
-	return
-}
 
 func main() {
 	var (
@@ -116,14 +56,14 @@ func main() {
 	sqlDB.SetMaxIdleConns(24)
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
-	if err := runMigrations(sqlDB); err != nil {
+	if err := utility.RunMigrations(sqlDB); err != nil {
 		log.Fatalf("Failed to run migrations: %v", err)
 	}
 
 	queries := db.New(sqlDB)
 	ctx := context.Background()
 	limiter := utility.NewRateLimiter(23, time.Minute)
-	progress := newProgressTracker(*limit)
+	progress := utility.NewProgressTracker(*limit) 
 
 	var cursor *string
 
@@ -147,15 +87,15 @@ func main() {
 			break
 		}
 
-		progress.printProgress(progress.total+len(resp.Documents), int(resp.NumFound))
+		progress.PrintProgress(progress.Total+len(resp.Documents), int(resp.NumFound))
 
 		for _, vorgang := range resp.Documents {
 			if err := storeVorgang(ctx, queries, vorgang); err != nil {
 				log.Printf("Warning: Failed to store vorgang %s: %v", vorgang.Id, err)
 			}
-			progress.increment()
+			progress.Increment()
 
-			if *limit > 0 && progress.total >= *limit {
+			if *limit > 0 && progress.Total >= *limit {
 				fmt.Println() // New line before final message
 				log.Printf("Reached limit of %d vorgänge", *limit)
 				goto done
@@ -170,25 +110,13 @@ func main() {
 
 done:
 	fmt.Println() // New line after progress updates
-	elapsed, rate := progress.getStats()
+	elapsed, rate := progress.GetStats()
 	log.Printf("Successfully stored %d vorgänge in database %s (%.1f/sec, took %s)",
-		progress.total, *dbPath, rate, elapsed.Round(time.Second))
+		progress.Total, *dbPath, rate, elapsed.Round(time.Second))
 
 }
 
-func runMigrations(sqlDB *sql.DB) error {
-	if err := goose.SetDialect("sqlite3"); err != nil {
-		return fmt.Errorf("failed to set goose dialect: %w", err)
-	}
 
-	migrationsDir := "internal/database/migrations/sqlite"
-	if err := goose.Up(sqlDB, migrationsDir); err != nil {
-		return fmt.Errorf("failed to run migrations: %w", err)
-	}
-
-	log.Printf("Successfully ran all database migrations")
-	return nil
-}
 
 func storeVorgang(ctx context.Context, q *db.Queries, vorgang client.Vorgang) error {
 	existing, err := q.GetVorgang(ctx, vorgang.Id)
