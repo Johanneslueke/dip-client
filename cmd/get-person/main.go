@@ -8,7 +8,7 @@ import (
 	"log"
 	"os"
 
-	dipclient "dpi/pkg/dip-client"
+	dipclient "github.com/Johanneslueke/dip-client/pkg/dip-client"
 )
 
 func main() {

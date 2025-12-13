@@ -9,7 +9,7 @@ import (
 	"os"
 	"strings"
 
-	dipclient "dpi/pkg/dip-client"
+	dipclient "github.com/Johanneslueke/dip-client/pkg/dip-client"
 )
 
 type filterParams struct {

@@ -1,4 +1,4 @@
-module dpi
+module github.com/Johanneslueke/dip-client
 
 go 1.25.4
 

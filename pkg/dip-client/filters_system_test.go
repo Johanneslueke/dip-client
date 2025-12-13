@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	dipclient "dpi/pkg/dip-client"
+	dipclient "github.com/Johanneslueke/dip-client/pkg/dip-client"
 )
 
 // TestSystem_AllFilters verifies that all filter types work correctly with the API

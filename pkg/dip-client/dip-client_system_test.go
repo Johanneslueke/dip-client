@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	dipclient "dpi/pkg/dip-client"
+	dipclient "github.com/Johanneslueke/dip-client/pkg/dip-client"
 )
 
 const testAPIKey = "OSOegLs.PR2lwJ1dwCeje9vTj7FPOt3hvpYKtwKkhw"

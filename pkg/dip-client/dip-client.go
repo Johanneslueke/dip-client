@@ -2,9 +2,10 @@ package dipclient
 
 import (
 	"context"
-	client "dpi/internal/gen"
 	"fmt"
 	"net/http"
+
+	client "github.com/Johanneslueke/dip-client/internal/gen"
 )
 
 // Re-exported types from the generated client
