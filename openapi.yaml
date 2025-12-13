@@ -1,0 +1,1945 @@
+---
+openapi: "3.0.1"
+info:
+  title: "Deutscher Bundestag - DIP"
+  description: "API des Dokumentations- und Informationssystems fÃ¼r Parlamentsmaterialien"
+  version: "1.2"
+  termsOfService: "https://dip.bundestag.de/%C3%BCber-dip/nutzungsbedingungen"
+  contact:
+    name: "Auskunfts- und Rechercheservice der Parlamentsdokumentation"
+    email: "parlamentsdokumentation@bundestag.de"
+servers:
+  - url: "https://search.dip.bundestag.de/api/v1"
+security:
+  - ApiKeyHeader: []
+  - ApiKeyQuery: []
+paths:
+  /vorgang:
+    get:
+      tags:
+        - "VorgÃ¤nge"
+      operationId: "getVorgangList"
+      summary: "Liefert eine Liste von Metadaten zu VorgÃ¤ngen"
+      parameters:
+        - $ref: "#/components/parameters/DatumStartFilter"
+        - $ref: "#/components/parameters/DatumEndFilter"
+        - $ref: "#/components/parameters/AktualisiertStartFilter"
+        - $ref: "#/components/parameters/AktualisiertEndFilter"
+        - $ref: "#/components/parameters/WahlperiodeFilter"
+        - $ref: "#/components/parameters/DrucksacheFilter"
+        - $ref: "#/components/parameters/IdFilter"
+        - $ref: "#/components/parameters/PlenarprotokollFilter"
+        - $ref: "#/components/parameters/DokumentartFilter"
+        - $ref: "#/components/parameters/DokumentnummerFilter"
+        - $ref: "#/components/parameters/DrucksachtypFilter"
+        - $ref: "#/components/parameters/FrageNummerFilter"
+        - $ref: "#/components/parameters/GestaFilter"
+        - $ref: "#/components/parameters/Format"
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: "Liste von Metadaten zu VorgÃ¤ngen"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VorgangListResponse"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/VorgangListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+  /vorgang/{id}:
+    get:
+      tags:
+        - "VorgÃ¤nge"
+      operationId: "getVorgang"
+      summary: "Liefert Metadaten zu einem Vorgang"
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/Format"
+      responses:
+        "200":
+          description: "Metadaten eines Vorgangs"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vorgang"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/Vorgang"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+  /vorgangsposition:
+    get:
+      tags:
+        - "Vorgangspositionen"
+      operationId: "getVorgangspositionList"
+      summary: "Liefert eine Liste von Metadaten zu Vorgangspositionen"
+      parameters:
+        - $ref: "#/components/parameters/AktualisiertStartFilter"
+        - $ref: "#/components/parameters/AktualisiertEndFilter"
+        - $ref: "#/components/parameters/AktivitaetFilter"
+        - $ref: "#/components/parameters/DatumStartFilter"
+        - $ref: "#/components/parameters/DatumEndFilter"
+        - $ref: "#/components/parameters/WahlperiodeFilter"
+        - $ref: "#/components/parameters/DrucksacheFilter"
+        - $ref: "#/components/parameters/IdFilter"
+        - $ref: "#/components/parameters/PlenarprotokollFilter"
+        - $ref: "#/components/parameters/VorgangFilter"
+        - $ref: "#/components/parameters/DokumentartFilter"
+        - $ref: "#/components/parameters/DokumentnummerFilter"
+        - $ref: "#/components/parameters/DrucksachtypFilter"
+        - $ref: "#/components/parameters/FrageNummerFilter"
+        - $ref: "#/components/parameters/ZuordnungFilter"
+        - $ref: "#/components/parameters/Format"
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: "Metadaten zu Vorgangspositionen"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VorgangspositionListResponse"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/VorgangspositionListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+  /vorgangsposition/{id}:
+    get:
+      tags:
+        - "Vorgangspositionen"
+      operationId: "getVorgangsposition"
+      summary: "Liefert Metadaten zu einer Vorgangsposition"
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/Format"
+      responses:
+        "200":
+          description: "Metadaten einer Vorgangsposition"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vorgangsposition"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/Vorgangsposition"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+  /drucksache:
+    get:
+      tags:
+        - "Drucksachen"
+      operationId: "getDrucksacheList"
+      summary: "Liefert eine Liste von Metadaten zu Drucksachen"
+      parameters:
+        - $ref: "#/components/parameters/AktualisiertStartFilter"
+        - $ref: "#/components/parameters/AktualisiertEndFilter"
+        - $ref: "#/components/parameters/DatumStartFilter"
+        - $ref: "#/components/parameters/DatumEndFilter"
+        - $ref: "#/components/parameters/WahlperiodeFilter"
+        - $ref: "#/components/parameters/IdFilter"
+        - $ref: "#/components/parameters/DokumentnummerFilter"
+        - $ref: "#/components/parameters/DrucksachtypFilter"
+        - $ref: "#/components/parameters/ZuordnungFilter"
+        - $ref: "#/components/parameters/Format"
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: "Metadaten zu Drucksachen"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DrucksacheListResponse"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/DrucksacheListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+  /drucksache/{id}:
+    get:
+      tags:
+        - "Drucksachen"
+      operationId: "getDrucksache"
+      summary: "Liefert Metadaten zu einer Drucksache"
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/Format"
+      responses:
+        "200":
+          description: "Metadaten einer Drucksache"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Drucksache"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/Drucksache"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+  /drucksache-text:
+    get:
+      tags:
+        - "Drucksachen"
+      operationId: "getDrucksacheTextList"
+      summary: "Liefert eine Liste von Volltexten und Metadaten zu Drucksachen"
+      parameters:
+        - $ref: "#/components/parameters/AktualisiertStartFilter"
+        - $ref: "#/components/parameters/AktualisiertEndFilter"
+        - $ref: "#/components/parameters/DatumStartFilter"
+        - $ref: "#/components/parameters/DatumEndFilter"
+        - $ref: "#/components/parameters/WahlperiodeFilter"
+        - $ref: "#/components/parameters/IdFilter"
+        - $ref: "#/components/parameters/DokumentnummerFilter"
+        - $ref: "#/components/parameters/DrucksachtypFilter"
+        - $ref: "#/components/parameters/ZuordnungFilter"
+        - $ref: "#/components/parameters/Format"
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: "Volltext und Metadaten zu Drucksachen"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DrucksacheTextListResponse"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/DrucksacheTextListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+  /drucksache-text/{id}:
+    get:
+      tags:
+        - "Drucksachen"
+      operationId: "getDrucksacheText"
+      summary: "Liefert Volltext und Metadaten zu einer Drucksache"
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/Format"
+      responses:
+        "200":
+          description: "Volltext und Metadaten einer Drucksache"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DrucksacheText"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/DrucksacheText"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+  /plenarprotokoll:
+    get:
+      tags:
+        - "Plenarprotokolle"
+      operationId: "getPlenarprotokollList"
+      summary: "Liefert eine Liste von Metadaten zu Plenarprotokollen"
+      parameters:
+        - $ref: "#/components/parameters/AktualisiertStartFilter"
+        - $ref: "#/components/parameters/AktualisiertEndFilter"
+        - $ref: "#/components/parameters/DatumStartFilter"
+        - $ref: "#/components/parameters/DatumEndFilter"
+        - $ref: "#/components/parameters/WahlperiodeFilter"
+        - $ref: "#/components/parameters/IdFilter"
+        - $ref: "#/components/parameters/DokumentnummerFilter"
+        - $ref: "#/components/parameters/ZuordnungFilter"
+        - $ref: "#/components/parameters/Format"
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: "Metadaten zu Plenarprotokollen"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlenarprotokollListResponse"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/PlenarprotokollListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+  /plenarprotokoll/{id}:
+    get:
+      tags:
+        - "Plenarprotokolle"
+      operationId: "getPlenarprotokoll"
+      summary: "Liefert Metadaten zu einem Plenarprotokoll"
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/Format"
+      responses:
+        "200":
+          description: "Metadaten eines Plenarprotokolls"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Plenarprotokoll"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/Plenarprotokoll"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+  /plenarprotokoll-text:
+    get:
+      tags:
+        - "Plenarprotokolle"
+      operationId: "getPlenarprotokollTextList"
+      summary: "Liefert eine Liste von Volltexten und Metadaten zu Plenarprotokollen"
+      parameters:
+        - $ref: "#/components/parameters/AktualisiertStartFilter"
+        - $ref: "#/components/parameters/AktualisiertEndFilter"
+        - $ref: "#/components/parameters/DatumStartFilter"
+        - $ref: "#/components/parameters/DatumEndFilter"
+        - $ref: "#/components/parameters/WahlperiodeFilter"
+        - $ref: "#/components/parameters/IdFilter"
+        - $ref: "#/components/parameters/DokumentnummerFilter"
+        - $ref: "#/components/parameters/ZuordnungFilter"
+        - $ref: "#/components/parameters/Format"
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: "Volltext und Metadaten zu Plenarprotokollen"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlenarprotokollTextListResponse"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/PlenarprotokollTextListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+  /plenarprotokoll-text/{id}:
+    get:
+      tags:
+        - "Plenarprotokolle"
+      operationId: "getPlenarprotokollText"
+      summary: "Liefert Volltext und Metadaten zu einem Plenarprotokoll"
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/Format"
+      responses:
+        "200":
+          description: "Volltext und Metadaten eines Plenarprotokolls"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlenarprotokollText"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/PlenarprotokollText"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+  /aktivitaet:
+    get:
+      tags:
+        - "AktivitÃ¤ten"
+      operationId: "getAktivitaetList"
+      summary: "Liefert eine Liste von Metadaten zu AktivitÃ¤ten"
+      parameters:
+        - $ref: "#/components/parameters/AktualisiertStartFilter"
+        - $ref: "#/components/parameters/AktualisiertEndFilter"
+        - $ref: "#/components/parameters/DatumStartFilter"
+        - $ref: "#/components/parameters/DatumEndFilter"
+        - $ref: "#/components/parameters/WahlperiodeFilter"
+        - $ref: "#/components/parameters/DrucksacheFilter"
+        - $ref: "#/components/parameters/IdFilter"
+        - $ref: "#/components/parameters/PlenarprotokollFilter"
+        - $ref: "#/components/parameters/DokumentartFilter"
+        - $ref: "#/components/parameters/DokumentnummerFilter"
+        - $ref: "#/components/parameters/DrucksachtypFilter"
+        - $ref: "#/components/parameters/FrageNummerFilter"
+        - $ref: "#/components/parameters/ZuordnungFilter"
+        - $ref: "#/components/parameters/Format"
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: "Metadaten zu AktivitaÌˆten"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AktivitaetListResponse"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/AktivitaetListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+  /aktivitaet/{id}:
+    get:
+      tags:
+        - "AktivitÃ¤ten"
+      operationId: "getAktivitaet"
+      summary: "Liefert Metadaten zu einer AktivitÃ¤t"
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/Format"
+      responses:
+        "200":
+          description: "Metadaten einer AktivitÃ¤t"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Aktivitaet"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/Aktivitaet"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+  /person:
+    get:
+      tags:
+        - "Personenstammdaten"
+      operationId: "getPersonList"
+      summary: "Liefert eine Liste von Personenstammdaten"
+      parameters:
+        - $ref: "#/components/parameters/AktualisiertStartFilter"
+        - $ref: "#/components/parameters/AktualisiertEndFilter"
+        - $ref: "#/components/parameters/DatumStartFilter"
+        - $ref: "#/components/parameters/DatumEndFilter"
+        - $ref: "#/components/parameters/WahlperiodeFilter"
+        - $ref: "#/components/parameters/IdFilter"
+        - $ref: "#/components/parameters/Format"
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: "Personenstammdaten"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PersonListResponse"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/PersonListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+  /person/{id}:
+    get:
+      tags:
+        - "Personenstammdaten"
+      operationId: "getPerson"
+      summary: "Liefert Personenstammdaten zu einer Person"
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/Format"
+      responses:
+        "200":
+          description: "Personenstammdaten"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Person"
+            application/xml:
+              schema:
+                $ref: "#/components/schemas/Person"
+        "401":
+          $ref: "#/components/responses/UnauthorizedResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundResponse"
+components:
+  securitySchemes:
+    ApiKeyHeader:
+      type: "apiKey"
+      in: "header"
+      name: "Authorization"
+      description: "Beispiel: *ApiKey rgsaY4U.oZRQKUHdJhF9qguHMkwCGIoLaqEcaHjYLF*\n"
+    ApiKeyQuery:
+      type: "apiKey"
+      in: "query"
+      name: "apikey"
+      description: "Beispiel: *rgsaY4U.oZRQKUHdJhF9qguHMkwCGIoLaqEcaHjYLF*\n"
+  parameters:
+    Id:
+      name: "id"
+      in: "path"
+      required: true
+      schema:
+        type: "integer"
+      example: 1
+    AktivitaetFilter:
+      name: "f.aktivitaet"
+      in: "query"
+      schema:
+        type: "integer"
+      description:
+        "ID einer verknÃ¼pften AktivitÃ¤t\n\nSelektiert alle EntitÃ¤ten, die\
+        \ mit der angegebenen AktivitÃ¤t verknÃ¼pft sind.\n"
+    DatumStartFilter:
+      name: "f.datum.start"
+      in: "query"
+      schema:
+        $ref: "#/components/schemas/Datum"
+      description:
+        "FrÃ¼hestes Datum der EntitÃ¤t\n\nSelektiert EntitÃ¤ten in einem Datumsbereich\
+        \ basierend auf dem Dokumentdatum. FÃ¼r VorgÃ¤nge und Personen wird der Datumsbereich\
+        \ aller zugehÃ¶rigen Dokumente herangezogen.\n"
+      example: "2021-01-11"
+    DatumEndFilter:
+      name: "f.datum.end"
+      in: "query"
+      schema:
+        $ref: "#/components/schemas/Datum"
+      description:
+        "SpÃ¤testes Datum der EntitÃ¤t\n\nSelektiert EntitÃ¤ten in einem Datumsbereich\
+        \ basierend auf dem Dokumentdatum. FÃ¼r VorgÃ¤nge und Personen wird der Datumsbereich\
+        \ aller zugehÃ¶rigen Dokumente herangezogen.\n"
+      example: "2021-01-15"
+    AktualisiertStartFilter:
+      name: "f.aktualisiert.start"
+      in: "query"
+      schema:
+        type: "string"
+        format: "date-time"
+      description:
+        "FrÃ¼hestes Aktualisierungsdatum der EntitÃ¤t\n\nSelektiert EntitÃ¤\
+        ten in einem Datumsbereich basierend auf dem letzten Aktualisierungsdatum.\n"
+      example: "2022-06-01T15:00:00+02:00"
+    AktualisiertEndFilter:
+      name: "f.aktualisiert.end"
+      in: "query"
+      schema:
+        type: "string"
+        format: "date-time"
+      description:
+        "SpÃ¤testes Aktualisierungsdatum der EntitÃ¤t\n\nSelektiert EntitÃ¤\
+        ten in einem Datumsbereich basierend auf dem letzten Aktualisierungsdatum.\n"
+    WahlperiodeFilter:
+      name: "f.wahlperiode"
+      in: "query"
+      schema:
+        type: "integer"
+      description:
+        "Nummer der Wahlperiode\n\nSelektiert alle EntitÃ¤ten, die der angegebenen\
+        \ Wahlperiode zugeordnet sind.\nKann wiederholt werden, um mehrere Wahlperioden\
+        \ zu selektieren.\n"
+    DrucksacheFilter:
+      name: "f.drucksache"
+      in: "query"
+      schema:
+        type: "integer"
+      description:
+        "ID einer verknÃ¼pften Drucksache\n\nSelektiert alle EntitÃ¤ten,\
+        \ die mit der angegebenen Drucksache verknÃ¼pft sind.\n"
+    IdFilter:
+      name: "f.id"
+      in: "query"
+      schema:
+        type: "integer"
+      description:
+        "ID der EntitÃ¤t\n\nKann wiederholt werden, um mehrere EntitÃ¤ten\
+        \ zu selektieren.\n"
+    PlenarprotokollFilter:
+      name: "f.plenarprotokoll"
+      in: "query"
+      schema:
+        type: "integer"
+      description:
+        "ID eines verknÃ¼pften Plenarprotokolls\n\nSelektiert alle EntitÃ¤\
+        ten, die mit dem angegebenen Plenarprotokoll verknÃ¼pft sind.\n"
+    VorgangFilter:
+      name: "f.vorgang"
+      in: "query"
+      schema:
+        type: "integer"
+      description:
+        "ID eines verknÃ¼pften Vorgangs\n\nSelektiert alle EntitÃ¤ten, die\
+        \ mit dem angegebenen Vorgang verknÃ¼pft sind.\n"
+    DokumentnummerFilter:
+      name: "f.dokumentnummer"
+      in: "query"
+      schema:
+        type: "string"
+      description:
+        "Dokumentnummer einer Drucksache oder eines Plenarprotokolls\n\n\
+        Selektiert alle EntitÃ¤ten, die mit der angegebenen Dokumentnummer verknÃ¼pft\
+        \ sind.\nKann wiederholt werden, um mehrere Dokumentnummern zu selektieren.\n"
+    DokumentartFilter:
+      name: "f.dokumentart"
+      in: "query"
+      schema:
+        type: "string"
+        enum:
+          - "Drucksache"
+          - "Plenarprotokoll"
+      description:
+        "Drucksache oder Plenarprotokoll\n\nSelektiert alle EntitÃ¤ten,\
+        \ die mit der angegebenen Dokumentart verknÃ¼pft sind.\n"
+    DrucksachtypFilter:
+      name: "f.drucksachetyp"
+      in: "query"
+      schema:
+        type: "string"
+      description:
+        "Typ der Drucksache\n\nSelektiert alle EntitÃ¤ten, die mit dem angegebenen\
+        \ Drucksachetyp verknÃ¼pft sind.\n"
+    FrageNummerFilter:
+      name: "f.frage_nummer"
+      in: "query"
+      schema:
+        type: "string"
+      description:
+        "Fragenummer/Listenziffer\n\nSelektiert alle EntitÃ¤ten, die mit\
+        \ der angegebenen Fragenummer in einer Drucksache verknÃ¼pft sind.\nKann wiederholt\
+        \ werden, um mehrere Fragenummern zu selektieren.\n"
+    GestaFilter:
+      name: "f.gesta"
+      in: "query"
+      schema:
+        type: "string"
+      description:
+        "GESTA-Ordnungsnummer\n\nSelektiert alle EntitÃ¤ten, die der angegebenen\
+        \ GESTA-Ordnungsnummer zugeordnet sind.\nKann wiederholt werden, um mehrere\
+        \ Ordnungsnummern zu selektieren.\n"
+    ZuordnungFilter:
+      name: "f.zuordnung"
+      in: "query"
+      schema:
+        $ref: "#/components/schemas/Zuordnung"
+      description:
+        "Zuordnung der EntitÃ¤t zum Bundestag, Bundesrat, Bundesversammlung\
+        \ oder Europakammer"
+    Format:
+      name: "format"
+      in: "query"
+      schema:
+        type: "string"
+        enum:
+          - "json"
+          - "xml"
+        default: "json"
+      description:
+        "Steuert das Datenformat der Antwort, mÃ¶glich sind JSON (voreingestellt)\
+        \ oder XML."
+    Cursor:
+      name: "cursor"
+      in: "query"
+      schema:
+        type: "string"
+      description:
+        "Position des Cursors zur Anfrage weiterer EntitÃ¤ten\n\nÃœbersteigt\
+        \ die Anzahl der gefundenen EntitÃ¤ten das jeweilige Limit, muss eine Folgeanfrage\
+        \ gestellt werden, um weitere EntitÃ¤ten zu laden.\nEine Folgeanfrage wird\
+        \ gebildet, indem alle Parameter der ursprÃ¼nglichen Anfrage wiederholt werden\
+        \ und zusÃ¤tzlich der cursor Parameter der letzten Antwort eingesetzt wird.\n\
+        Es kÃ¶nnen solange Folgeanfragen gestellt werden, bis sich der cursor nicht\
+        \ mehr Ã¤ndert. Dies signalisiert, dass alle EntitÃ¤ten geladen wurden.\n"
+  responses:
+    BadRequestResponse:
+      description: "Syntaxfehler in einem der Anfrageparameter"
+      content:
+        application/json:
+          schema:
+            type: "object"
+            properties:
+              code:
+                type: "integer"
+                enum:
+                  - 400
+              message:
+                type: "string"
+                example: "Invalid cursor"
+            required:
+              - "code"
+              - "message"
+    UnauthorizedResponse:
+      description:
+        "Ein gÃ¼ltiger API-Key ist fÃ¼r alle Anfragen erforderlich. Dieser\
+        \ kann entweder im HTTP Authorization Header oder als Anfrageparameter apikey\
+        \ gesendet werden."
+      content:
+        application/json:
+          schema:
+            type: "object"
+            properties:
+              code:
+                type: "integer"
+                enum:
+                  - 401
+              message:
+                type: "string"
+                enum:
+                  - "An API key is required to access this service. Please refer to\
+                    \ https://dip.bundestag.de/Ã¼ber-dip/hilfe/api how to apply for a\
+                    \ key. Misuse of this service may lead to blocking your requests."
+            required:
+              - "code"
+              - "message"
+    NotFoundResponse:
+      description: "Die angefragte EntitÃ¤t wurde nicht gefunden"
+      content:
+        application/json:
+          schema:
+            type: "object"
+            properties:
+              code:
+                type: "integer"
+                enum:
+                  - 404
+              message:
+                type: "string"
+                example: "ID not found: 0"
+            required:
+              - "code"
+              - "message"
+  schemas:
+    ListResponseBase:
+      type: "object"
+      xml:
+        name: "response"
+      properties:
+        numFound:
+          type: "integer"
+          format: "int32"
+          example: 176
+        cursor:
+          type: "string"
+          example: "AoJwgNjC_PYCMURydWNrc2FjaGUtMjQ5MjYw"
+      required:
+        - "numFound"
+        - "cursor"
+    VorgangListResponse:
+      allOf:
+        - $ref: "#/components/schemas/ListResponseBase"
+        - type: "object"
+          properties:
+            documents:
+              type: "array"
+              items:
+                $ref: "#/components/schemas/Vorgang"
+              minItems: 0
+              maxItems: 100
+          required:
+            - "documents"
+    VorgangspositionListResponse:
+      allOf:
+        - $ref: "#/components/schemas/ListResponseBase"
+        - type: "object"
+          properties:
+            documents:
+              type: "array"
+              items:
+                $ref: "#/components/schemas/Vorgangsposition"
+              minItems: 0
+              maxItems: 100
+          required:
+            - "documents"
+    PlenarprotokollListResponse:
+      allOf:
+        - $ref: "#/components/schemas/ListResponseBase"
+        - type: "object"
+          properties:
+            documents:
+              type: "array"
+              items:
+                $ref: "#/components/schemas/Plenarprotokoll"
+              minItems: 0
+              maxItems: 100
+          required:
+            - "documents"
+    DrucksacheListResponse:
+      allOf:
+        - $ref: "#/components/schemas/ListResponseBase"
+        - type: "object"
+          properties:
+            documents:
+              type: "array"
+              items:
+                $ref: "#/components/schemas/Drucksache"
+              minItems: 0
+              maxItems: 100
+          required:
+            - "documents"
+    PlenarprotokollTextListResponse:
+      allOf:
+        - $ref: "#/components/schemas/ListResponseBase"
+        - type: "object"
+          properties:
+            documents:
+              type: "array"
+              items:
+                $ref: "#/components/schemas/PlenarprotokollText"
+              minItems: 0
+              maxItems: 10
+          required:
+            - "documents"
+    DrucksacheTextListResponse:
+      allOf:
+        - $ref: "#/components/schemas/ListResponseBase"
+        - type: "object"
+          properties:
+            documents:
+              type: "array"
+              items:
+                $ref: "#/components/schemas/DrucksacheText"
+              minItems: 0
+              maxItems: 10
+          required:
+            - "documents"
+    AktivitaetListResponse:
+      allOf:
+        - $ref: "#/components/schemas/ListResponseBase"
+        - type: "object"
+          properties:
+            documents:
+              type: "array"
+              items:
+                $ref: "#/components/schemas/Aktivitaet"
+              minItems: 0
+              maxItems: 100
+          required:
+            - "documents"
+    PersonListResponse:
+      allOf:
+        - $ref: "#/components/schemas/ListResponseBase"
+        - type: "object"
+          properties:
+            documents:
+              type: "array"
+              items:
+                $ref: "#/components/schemas/Person"
+              minItems: 0
+              maxItems: 100
+          required:
+            - "documents"
+    Vorgang:
+      description: "Liefert Metadaten zu einem Vorgang."
+      type: "object"
+      xml:
+        name: "document"
+      properties:
+        id:
+          type: "string"
+          pattern: "^\\d+$"
+          example: "84343"
+        typ:
+          type: "string"
+          enum:
+            - "Vorgang"
+          example: "Vorgang"
+        beratungsstand:
+          type: "string"
+          example: "Abgeschlossen"
+        vorgangstyp:
+          type: "string"
+          example: "GeschÃ¤ftsordnung"
+        wahlperiode:
+          type: "integer"
+          format: "int32"
+          example: 19
+        initiative:
+          type: "array"
+          items:
+            type: "string"
+            example: "Fraktion der CDU/CSU"
+        datum:
+          type: "string"
+          format: "date"
+          example: "2019-03-27"
+          description: "Datierung des letzten zugehÃ¶rigen Dokuments"
+        aktualisiert:
+          type: "string"
+          format: "date-time"
+          example: "2022-08-01T15:30:16+02:00"
+          description: "Letzte Aktualisierung der EntitÃ¤t"
+        titel:
+          type: "string"
+          example: "Weitergeltung von GeschÃ¤ftsordnungsrecht"
+        abstract:
+          type: "string"
+          example:
+            "Ãœbernahme von GeschÃ¤ftsordnungen durch den 19. Deutschen Bundestag:\
+            \ GeschÃ¤ftsordnung des Deutschen Bundestages, Gemeinsame GeschÃ¤ftsordnung\
+            \ fÃ¼r den Vermittlungsausschuss, GeschÃ¤ftsordnung fÃ¼r den Gemeinsamen\
+            \ Ausschuss, GeschÃ¤ftsordnung fÃ¼r das Verfahren nach Art. 115d GG, Richtlinien\
+            \ zur ÃœberprÃ¼fung auf eine Stasi-TÃ¤tigkeit"
+        sachgebiet:
+          type: "array"
+          items:
+            type: "string"
+            example: "Bundestag"
+        deskriptor:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/VorgangDeskriptor"
+        gesta:
+          type: "string"
+          example: "B101"
+          description: "GESTA-Ordnungsnummer"
+        zustimmungsbeduerftigkeit:
+          type: "array"
+          items:
+            type: "string"
+            example: "Nein, laut VerkÃ¼ndung (BGBl I)"
+        kom:
+          type: "string"
+          example: "(2017) 600 endg."
+          description: "KOM-Nr."
+        ratsdok:
+          type: "string"
+          example: "11018/17"
+          description: "Ratsdok-Nr."
+        verkuendung:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/Verkuendung"
+        inkrafttreten:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/Inkrafttreten"
+        archiv:
+          type: "string"
+          example: "XIX/288"
+          description: "Archivsignatur"
+        mitteilung:
+          type: "string"
+          example:
+            "Tag des Inkrafttretens bestimmter Teile des Gesetzes wird durch\
+            \ das BMI im BGBl bekanntgemacht, weiteres siehe im BGBl"
+        vorgang_verlinkung:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/VorgangVerlinkung"
+        sek:
+          type: "string"
+          example: "(2010) 305 endg."
+          description: "SEK-Nr."
+      required:
+        - "id"
+        - "typ"
+        - "vorgangstyp"
+        - "wahlperiode"
+        - "aktualisiert"
+        - "titel"
+    Vorgangsposition:
+      description: "Liefert Metadaten zu einer Vorgangsposition (Vorgangsschritt)."
+      type: "object"
+      xml:
+        name: "document"
+      properties:
+        id:
+          type: "string"
+          pattern: "^\\d+$"
+          example: "173376"
+        vorgangsposition:
+          type: "string"
+          example: "Antrag zur Weitergeltung der GeschÃ¤ftsordnung"
+        zuordnung:
+          $ref: "#/components/schemas/Zuordnung"
+        gang:
+          type: "boolean"
+          description:
+            "Alle Vorgangsschritte, die von besonderer Bedeutung fÃ¼r den\
+            \ Fortgang der Beratung sind, werden durch das Attribut `gang: true` gekennzeichnet.\n\
+            \nIst ein solcher Vorgangsschritt mit einer Drucksache verknÃ¼pft, werden\
+            \ im Frontend unter der Benennung \"Wichtige Drucksachen\" Herausgeber,\
+            \ Nummer und Typ sowie das Datum der entsprechenden Drucksachen ausgegeben\
+            \ (z.B. BT-Drs 18/13014 (Beschlussempfehlung), 28.06.2017). \nIst er mit\
+            \ einem Plenarprotokoll verknÃ¼pft, werden im Frontend unter der Benennung\
+            \ \"Plenum\" der Klartext der Vorgangsposition, Datum, Herausgeber und\
+            \ Nummer des Plenarprotokolls mit Anfangsseite/Quadrant und Endseite/Quadrant\
+            \ dargestellt (z.B. 2. Beratung: 29.06.2017, BT-PlPr 18/243, S. 24964C\
+            \ - 24973C).\n"
+        fortsetzung:
+          type: "boolean"
+          description:
+            "Erstreckt sich eine Beratung Ã¼ber mehrere Plenarprotokolle,\
+            \ so mÃ¼ssen entsprechend viele Vorgangsschritte mit je gleicher Vorgangsposition\
+            \ im Vorgangsablauf angelegt werden. Der zweite und jeder weitere dieser\
+            \ Schritte wird dann als \"Fortsetzung\" gekennzeichnet (Attribut `fortsetzung:\
+            \ true`). \nFÃ¼r die Beratung des Gesetzentwurfs fÃ¼r die Feststellung des\
+            \ Haushaltsplanes (Haushaltsberatungen) gelten abweichende Regelungen.\n"
+        nachtrag:
+          type: "boolean"
+          description:
+            "Eine Auswertungseinheit eines Plenarprotokolls kann nur an\
+            \ genau einen Vorgangsschritt angebunden werden. \nMÃ¼ssen aber mehrere\
+            \ Auswertungseinheiten fÃ¼r einen Vorgangsschritt gebildet werden (weil\
+            \ die ErgÃ¤nzung einer Rede erst in einem spÃ¤teren Protokoll erscheint\
+            \ oder weil sich z.B. bei einer Verbundenen Beratung (Â§ 24 GO-BT) nicht\
+            \ alle Schriftlichen ErklÃ¤rungen nach Â§ 31 GO-BT auf sÃ¤mtliche Vorlagen\
+            \ beziehen), \ndann mÃ¼ssen im Vorgangsablauf mehrere Vorgangsschritte\
+            \ mit der gleichen Vorgangsposition angelegt werden. Der zweite und jeder\
+            \ weitere dieser Schritte wird dann als \"Nachtrag\" gekennzeichnet (Attribut\
+            \ `nachtrag: true`)\n"
+        vorgangstyp:
+          type: "string"
+          example: "GeschÃ¤ftsordnung"
+          description: "Vorgangstyp des zugehÃ¶rigen Vorgangs"
+        typ:
+          type: "string"
+          enum:
+            - "Vorgangsposition"
+          example: "Vorgangsposition"
+        titel:
+          type: "string"
+          example: "Weitergeltung von GeschÃ¤ftsordnungsrecht"
+          description: "Titel des zugehÃ¶rigen Vorgangs"
+        dokumentart:
+          type: "string"
+          enum:
+            - "Drucksache"
+            - "Plenarprotokoll"
+          example: "Drucksache"
+        vorgang_id:
+          type: "string"
+          pattern: "^\\d+$"
+          example: "84343"
+          description: "ID des zugehÃ¶rigen Vorgangs"
+        datum:
+          type: "string"
+          format: "date"
+          example: "2017-10-24"
+          description: "Datum des zugehÃ¶rigen Dokuments"
+        aktualisiert:
+          type: "string"
+          format: "date-time"
+          example: "2022-08-01T15:30:16+02:00"
+          description: "Letzte Aktualisierung der EntitÃ¤t oder des zugehÃ¶rigen Dokuments"
+        fundstelle:
+          $ref: "#/components/schemas/Fundstelle"
+        urheber:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/Urheber"
+        ueberweisung:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/Ueberweisung"
+        aktivitaet_anzeige:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/AktivitaetAnzeige"
+          minItems: 0
+          maxItems: 4
+          description:
+            "Zusammenfassung der ersten 4 zur Anzeige vorgesehenen AktivitÃ¤\
+            ten"
+        aktivitaet_anzahl:
+          type: "integer"
+          format: "int32"
+          example: 2
+          description: "Gesamtzahl der zugehÃ¶rigen AktivitÃ¤ten"
+        ressort:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/Ressort"
+        beschlussfassung:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/Beschlussfassung"
+        ratsdok:
+          type: "string"
+          example: "11018/17"
+          description: "Ratsdok-Nr."
+        kom:
+          type: "string"
+          example: "(2017) 600 endg."
+          description: "KOM-Nr."
+        sek:
+          type: "string"
+          example: "(2010) 305 endg."
+          description: "SEK-Nr."
+        mitberaten:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/Vorgangspositionbezug"
+          description:
+            "Es ist eine hÃ¤ufig geÃ¼bte Praxis, mehrere thematisch verwandte\
+            \ Vorlagen (z.B. konkurrierende AntrÃ¤ge der verschiedenen Fraktionen zum\
+            \ Thema Diesel-Fahrverbote) in einer Debatte gemeinsam zu beraten (\"\
+            Zusammenberatung\").\n\n`mitberaten` liefert, von einem Vorgang ausgehend,\
+            \ alle anderen VorgÃ¤nge, die Gegenstand der Zusammenberatung sind.\n"
+        abstract:
+          type: "string"
+          example:
+            "Stellungnahme der BRg zu den TÃ¤tigkeitsberichten 2016/2017 der\
+            \ Bundesnetzagentur  - Telekommunikation und Post - mit den Sondergutachten\
+            \ der Monopolkommission"
+      required:
+        - "id"
+        - "vorgangsposition"
+        - "zuordnung"
+        - "gang"
+        - "fortsetzung"
+        - "nachtrag"
+        - "vorgangstyp"
+        - "typ"
+        - "titel"
+        - "dokumentart"
+        - "vorgang_id"
+        - "datum"
+        - "aktualisiert"
+        - "fundstelle"
+        - "aktivitaet_anzahl"
+    Drucksache:
+      description: "Liefert Metadaten zu einer Drucksache."
+      type: "object"
+      xml:
+        name: "document"
+      properties:
+        id:
+          type: "string"
+          pattern: "^\\d+$"
+          example: "68852"
+        typ:
+          type: "string"
+          enum:
+            - "Dokument"
+          example: "Dokument"
+        dokumentart:
+          type: "string"
+          enum:
+            - "Drucksache"
+          example: "Drucksache"
+        drucksachetyp:
+          type: "string"
+          example: "Antrag"
+        dokumentnummer:
+          type: "string"
+          example: "19/1"
+        wahlperiode:
+          type: "integer"
+          format: "int32"
+          example: 19
+        herausgeber:
+          type: "string"
+          enum:
+            - "BT"
+            - "BR"
+          example: "BT"
+        datum:
+          type: "string"
+          format: "date"
+          example: "2017-10-24"
+        aktualisiert:
+          type: "string"
+          format: "date-time"
+          example: "2022-08-01T15:30:16+02:00"
+          description: "Letzte Aktualisierung der EntitÃ¤t"
+        titel:
+          type: "string"
+          example: "Weitergeltung von GeschÃ¤ftsordnungsrecht"
+        autoren_anzeige:
+          type: "array"
+          items:
+            type: "object"
+            properties:
+              id:
+                type: "string"
+                pattern: "^\\d+$"
+                example: "546"
+                description: "ID von Personenstammdaten"
+              title:
+                type: "string"
+                example: "Kai Gehring, MdB, BÃœNDNIS 90/DIE GRÃœNEN"
+              autor_titel:
+                type: "string"
+                example: "Kai Gehring"
+            required:
+              - "id"
+              - "title"
+              - "autor_titel"
+          minItems: 0
+          maxItems: 4
+          description: "Zusammenfassung der ersten 4 zur Anzeige markierten Autor:innen"
+        autoren_anzahl:
+          type: "integer"
+          format: "int32"
+          example: 4
+          description: "Gesamtzahl der Autor:innen"
+        fundstelle:
+          $ref: "#/components/schemas/Fundstelle"
+        pdf_hash:
+          type: "string"
+          example: "a33af31e7c4524db8db172ef8f9e0f6d"
+          description: "MD5-PrÃ¼fsumme der PDF-Datei"
+        urheber:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/Urheber"
+        vorgangsbezug:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/Vorgangsbezug"
+          minItems: 0
+          maxItems: 4
+          description: "Zusammenfassung der ersten 4 zugehÃ¶rigen VorgÃ¤nge"
+        vorgangsbezug_anzahl:
+          type: "integer"
+          format: "int32"
+          example: 6
+          description: "Gesamtzahl der zugehÃ¶rigen VorgÃ¤nge"
+        ressort:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/Ressort"
+        anlagen:
+          type: "string"
+          example: "Verzeichnis der Gutachten des SachverstÃ¤ndigenrates"
+      required:
+        - "id"
+        - "drucksachetyp"
+        - "dokumentart"
+        - "autoren_anzahl"
+        - "typ"
+        - "vorgangsbezug_anzahl"
+        - "dokumentnummer"
+        - "herausgeber"
+        - "datum"
+        - "aktualisiert"
+        - "titel"
+        - "fundstelle"
+    Plenarprotokoll:
+      description: "Liefert Metadaten zu einem Plenarprotokoll."
+      type: "object"
+      xml:
+        name: "document"
+      properties:
+        id:
+          type: "string"
+          pattern: "^\\d+$"
+          example: "908"
+        dokumentart:
+          type: "string"
+          enum:
+            - "Plenarprotokoll"
+          example: "Plenarprotokoll"
+        typ:
+          type: "string"
+          enum:
+            - "Dokument"
+          example: "Dokument"
+        dokumentnummer:
+          type: "string"
+          example: "19/1"
+        wahlperiode:
+          type: "integer"
+          format: "int32"
+          example: 19
+        herausgeber:
+          $ref: "#/components/schemas/Zuordnung"
+        datum:
+          type: "string"
+          format: "date"
+          example: "2017-10-24"
+        aktualisiert:
+          type: "string"
+          format: "date-time"
+          example: "2022-08-01T15:30:16+02:00"
+          description: "Letzte Aktualisierung der EntitÃ¤t"
+        titel:
+          type: "string"
+          example: "Protokoll der 1. Sitzung des 19. Deutschen Bundestages"
+        fundstelle:
+          $ref: "#/components/schemas/Fundstelle"
+        pdf_hash:
+          type: "string"
+          example: "a33af31e7c4524db8db172ef8f9e0f6d"
+          description: "MD5-PrÃ¼fsumme der PDF-Datei"
+        vorgangsbezug:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/Vorgangsbezug"
+          minItems: 0
+          maxItems: 4
+          description: "Zusammenfassung der ersten 4 zugehÃ¶rigen VorgÃ¤nge"
+        vorgangsbezug_anzahl:
+          type: "integer"
+          format: "int32"
+          example: 6
+          description: "Gesamtzahl der zugehÃ¶rigen VorgÃ¤nge"
+        sitzungsbemerkung:
+          type: "string"
+          example: "Sondersitzung"
+      required:
+        - "id"
+        - "dokumentart"
+        - "typ"
+        - "vorgangsbezug_anzahl"
+        - "dokumentnummer"
+        - "herausgeber"
+        - "datum"
+        - "aktualisiert"
+        - "titel"
+        - "fundstelle"
+    DokumentTextBase:
+      description: "Liefert zusÃ¤tzlich zu den Metadaten den Volltext eines Dokuments."
+      type: "object"
+      properties:
+        text:
+          type: "string"
+          description:
+            "Volltext des Dokuments\n\nDas Beispiel enthÃ¤lt einen gekÃ¼\
+            rzten Auszug einer Drucksache.\n"
+          example:
+            "Deutscher Bundestag Drucksache 19/1\n19. Wahlperiode 24.10.2017\n\
+            \nAntrag\nder Fraktion der CDU/CSU\nWeitergeltung von GeschÃ¤ftsordnungsrecht\n\
+            Der Bundestag wolle beschlieÃŸen:\nFÃ¼r die 19. Wahlperiode werden Ã¼bernommen\n\
+            â€“ die GeschÃ¤ftsordnung des Deutschen Bundestages einschlieÃŸlich ihrer\
+            \ Anla-\ngen, soweit sie vom Deutschen Bundestag zu beschlieÃŸen sind,\
+            \ in der Fassung\nder Bekanntmachung vom 2. Juli 1980 (BGBl. I S. 1237),\
+            \ zuletzt geÃ¤ndert\nlaut Bekanntmachung vom 12. Juni 2017 (BGBl. I S.\
+            \ 1877), wobei Â§ 126a der\nGeschÃ¤ftsordnung mit Ablauf der 18. Wahlperiode\
+            \ entfallen ist;\nâ€“ die Gemeinsame GeschÃ¤ftsordnung des Bundestages und\
+            \ des Bundesrates fÃ¼r\nden Ausschuss nach Artikel 77 des Grundgesetzes\
+            \ (Vermittlungsausschuss)\nvom 5. Mai 1951 (BGBl. II S. 103), zuletzt\
+            \ geÃ¤ndert laut Bekanntmachung vom\n30. April 2003 (BGBl. I S. 677);\n\
+            â€“ die GeschÃ¤ftsordnung fÃ¼r den Gemeinsamen Ausschuss vom 23. Juli 1969\n\
+            (BGBl. I S. 1102), zuletzt geÃ¤ndert laut Bekanntmachung vom 20. Juli 1993\n\
+            (BGBl. I S. 1500);\nâ€“ die GeschÃ¤ftsordnung fÃ¼r das Verfahren nach Artikel\
+            \ 115d des Grundgesetzes\nvom 23. Juli 1969 (BGBl. I S. 1100);\nâ€“ die\
+            \ Richtlinien zur ÃœberprÃ¼fung auf eine TÃ¤tigkeit oder politische Verantwor-\n\
+            tung fÃ¼r das Ministerium fÃ¼r Staatssicherheit/Amt fÃ¼r Nationale Sicherheit\
+            \ der\nehemaligen Deutschen Demokratischen Republik vom 13. Dezember 1991\n\
+            (BGBl. 1992 I S. 76), zuletzt geÃ¤ndert laut Bekanntmachung vom 21. Oktober\n\
+            2005 (BGBl. I S. 3094).\nBerlin, den 23. Oktober 2017\nVolker Kauder,\
+            \ Alexander Dobrindt und Fraktion\nSatz: Satzweiss.com Print, Web, Software\
+            \ GmbH, Mainzer StraÃŸe 116, 66121 SaarbrÃ¼cken, www.satzweiss.com\nDruck:\
+            \ Printsystem GmbH, SchafwÃ¤sche 1-3, 71296 Heimsheim, www.printsystem.de\n\
+            Vertrieb: Bundesanzeiger Verlag GmbH, Postfach 10 05 34, 50445 KÃ¶ln, Telefon\
+            \ (02 21) 97 66 83 40, Fax (02 21) 97 66 83 44, www.betrifft-gesetze.de\n\
+            ISSN 0722-8333\n"
+    DrucksacheText:
+      allOf:
+        - $ref: "#/components/schemas/Drucksache"
+        - $ref: "#/components/schemas/DokumentTextBase"
+    PlenarprotokollText:
+      allOf:
+        - $ref: "#/components/schemas/Plenarprotokoll"
+        - $ref: "#/components/schemas/DokumentTextBase"
+    Aktivitaet:
+      description: "Liefert Metadaten zu einer AktivitÃ¤t."
+      type: "object"
+      xml:
+        name: "document"
+      properties:
+        id:
+          type: "string"
+          pattern: "^\\d+$"
+          example: "1493545"
+        aktivitaetsart:
+          type: "string"
+          example: "Rede"
+        typ:
+          type: "string"
+          enum:
+            - "AktivitÃ¤t"
+          example: "AktivitÃ¤t"
+        dokumentart:
+          type: "string"
+          enum:
+            - "Drucksache"
+            - "Plenarprotokoll"
+          example: "Plenarprotokoll"
+        wahlperiode:
+          type: "integer"
+          format: "int32"
+          example: 19
+        datum:
+          type: "string"
+          format: "date"
+          example: "2020-12-11"
+        aktualisiert:
+          type: "string"
+          format: "date-time"
+          example: "2022-08-01T15:30:16+02:00"
+          description: "Letzte Aktualisierung der EntitÃ¤t oder des zugehÃ¶rigen Dokuments"
+        titel:
+          type: "string"
+          example: "Olaf Scholz, Bundesmin., Bundesministerium der Finanzen"
+        fundstelle:
+          $ref: "#/components/schemas/Fundstelle"
+        vorgangsbezug:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/Vorgangspositionbezug"
+          minItems: 0
+          maxItems: 4
+          description: "Zusammenfassung der ersten 4 zugehÃ¶rigen VorgÃ¤nge"
+        vorgangsbezug_anzahl:
+          type: "integer"
+          format: "int32"
+          example: 18
+          description: "Gesamtzahl der zugehÃ¶rigen VorgÃ¤nge"
+        deskriptor:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/Deskriptor"
+        abstract:
+          type: "string"
+          example: "Zusammenberaten mit Finanzplan"
+      required:
+        - "id"
+        - "aktivitaetsart"
+        - "typ"
+        - "vorgangsbezug_anzahl"
+        - "dokumentart"
+        - "wahlperiode"
+        - "datum"
+        - "aktualisiert"
+        - "titel"
+        - "fundstelle"
+    Person:
+      description: "Liefert Personenstammdaten zu einer Person"
+      type: "object"
+      xml:
+        name: "document"
+      properties:
+        id:
+          type: "string"
+          pattern: "^\\d+$"
+          example: "1728"
+        nachname:
+          type: "string"
+          example: "Leyen"
+        vorname:
+          type: "string"
+          example: "Ursula"
+        namenszusatz:
+          type: "string"
+          example: "von der"
+        typ:
+          type: "string"
+          example: "Person"
+        wahlperiode:
+          type: "integer"
+          format: "int32"
+          example: 15
+          description: "Wahlperiode des ersten zugehÃ¶rigen Dokuments"
+        basisdatum:
+          type: "string"
+          format: "date"
+          example: "2003-09-09"
+          description: "Datum des ersten zugehÃ¶rigen Dokuments"
+        datum:
+          type: "string"
+          format: "date"
+          example: "2019-06-25"
+          description: "Datum des letzten zugehÃ¶rigen Dokuments"
+        aktualisiert:
+          type: "string"
+          format: "date-time"
+          example: "2022-08-01T15:30:16+02:00"
+          description: "Letzte Aktualisierung der EntitÃ¤t"
+        titel:
+          type: "string"
+          example: "Dr.  Ursula von der Leyen, Bundesmin., Bundesministerium der Verteidigung"
+        person_roles:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/PersonRole"
+          description:
+            "NebeneintrÃ¤ge mit bspw. abweichenden Funktionen oder NamensÃ¤\
+            nderungen"
+      required:
+        - "id"
+        - "nachname"
+        - "vorname"
+        - "typ"
+        - "aktualisiert"
+        - "titel"
+    AktivitaetAnzeige:
+      description:
+        "Liefert im Vorgangsablauf die beim Vorgangsschritt zur Anzeige\
+        \ vorgesehenen AktivitÃ¤ten, z. B. eine Rede eines MdB beim Vorgangsschritt\
+        \ 1. Beratung in einem Gesetzgebungsvorgang."
+      type: "object"
+      properties:
+        aktivitaetsart:
+          type: "string"
+          example: "Rede"
+        titel:
+          type: "string"
+          example: "Prof. Dr. Patrick Sensburg, MdB, CDU/CSU"
+        pdf_url:
+          type: "string"
+          example: "https://dserver.bundestag.de/btp/19/19083.pdf#P.9800"
+        seite:
+          type: "string"
+          example: "9800D"
+      required:
+        - "aktivitaetsart"
+        - "titel"
+    Beschlussfassung:
+      description:
+        "Liefert die Beschlussfassung (z. B. Annahme, Ablehnung, Kenntnisnahme)\
+        \ zu einer Drucksache mit Fundstelle im Plenarprotokoll sowie Angaben zu ggf.\
+        \ erforderlichen qualifizierten Mehrheiten (`mehrheit`) bzw. der besonderen\
+        \ Abstimmungsverfahren (`abstimmungsart`)."
+      type: "object"
+      properties:
+        beschlusstenor:
+          type: "string"
+          example: "Annahme der Vorlage"
+        seite:
+          type: "string"
+          example: "11B"
+        abstimmungsart:
+          type: "string"
+          enum:
+            - "Abstimmung durch Aufruf der LÃ¤nder"
+            - "Geheime Wahl"
+            - "Hammelsprung"
+            - "Namentliche Abstimmung"
+            - "VerhÃ¤ltniswahl"
+        abstimm_ergebnis_bemerkung:
+          type: "string"
+          example: "einstimmig"
+        grundlage:
+          type: "string"
+          example: "Art. 80 Abs. 2 GG"
+        dokumentnummer:
+          type: "string"
+          example: "19/8"
+        mehrheit:
+          type: "string"
+          enum:
+            - "Absolute Mehrheit"
+            - "Zweidrittelmehrheit"
+      required:
+        - "beschlusstenor"
+    Deskriptor:
+      description:
+        "Liefert die mit einer AktivitÃ¤t zu deren inhaltlichen Beschreibung\
+        \ verknÃ¼pften SchlagwÃ¶rter. Die SchlagwÃ¶rter (Deskriptoren) entstammen dem\
+        \ kontrollierten Vokabular des Parlamentsthesaurus ANTHES/PARTHES und stehen\
+        \ in thematischer Beziehung zueinander.\n\nSiehe auch: VorgangDeskriptor\n"
+      type: "object"
+      properties:
+        name:
+          type: "string"
+          example: "Parlamentarische GeschÃ¤ftsordnung"
+        typ:
+          type: "string"
+          enum:
+            - "Freier Deskriptor"
+            - "Geograph. Begriffe"
+            - "Institutionen"
+            - "Personen"
+            - "Rechtsmaterialien"
+            - "Sachbegriffe"
+          example: "Sachbegriffe"
+      required:
+        - "name"
+        - "typ"
+    Fundstelle:
+      description:
+        "Liefert im Vorgangsablauf das zu einem Vorgangsschritt gehÃ¶rende\
+        \ Dokument (Drucksache oder Protokoll). \n\nBeispiel: â€žBT-Drucksache 19/1\
+        \ (Antrag Fraktion der CDU/CSU)â€œ oder beim Vorgangsschritt Beratung â€žBT-Plenarprotokoll\
+        \ 19/1, S. 4C-12Aâ€œ.\n"
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          pattern: "^\\d+$"
+          example: "68852"
+          description: "ID einer Drucksache oder eines Plenarprotokolls"
+        dokumentart:
+          type: "string"
+          enum:
+            - "Drucksache"
+            - "Plenarprotokoll"
+          example: "Drucksache"
+        pdf_url:
+          type: "string"
+          example: "https://dserver.bundestag.de/btd/19/000/1900001.pdf"
+        dokumentnummer:
+          type: "string"
+          example: "19/1"
+        datum:
+          type: "string"
+          format: "date"
+          example: "2017-10-24"
+        drucksachetyp:
+          type: "string"
+          example: "Antrag"
+        herausgeber:
+          $ref: "#/components/schemas/Zuordnung"
+        urheber:
+          type: "array"
+          items:
+            type: "string"
+            example: "Fraktion der CDU/CSU"
+            description: "KÃ¶rperschaftliche Urheber der zugehÃ¶rigen Drucksache"
+        verteildatum:
+          type: "string"
+          format: "date"
+          example: "2017-10-25"
+        seite:
+          type: "string"
+          example: "4292B"
+        anfangsseite:
+          type: "integer"
+          example: 4251
+        endseite:
+          type: "integer"
+          example: 4298
+        anfangsquadrant:
+          $ref: "#/components/schemas/Quadrant"
+        endquadrant:
+          $ref: "#/components/schemas/Quadrant"
+        frage_nummer:
+          type: "string"
+          example: "C.4"
+        anlagen:
+          type: "string"
+          example: "Verzeichnis der Gutachten des SachverstÃ¤ndigenrates"
+        top:
+          type: "integer"
+          format: "int32"
+          example: 2
+        top_zusatz:
+          type: "string"
+          example: "b"
+      required:
+        - "id"
+        - "dokumentnummer"
+        - "datum"
+        - "dokumentart"
+        - "herausgeber"
+        - "urheber"
+    Inkrafttreten:
+      description:
+        "Liefert im Gesetzgebungsvorgang zu einem verkÃ¼ndeten Gesetz das\
+        \ Datum des Tages, an dem das Gesetz in Kraft tritt bzw. an dem Teile eines\
+        \ Gesetzes in Kraft treten."
+      type: "object"
+      properties:
+        datum:
+          type: "string"
+          format: "date"
+          example: "2020-06-06"
+        erlaeuterung:
+          type: "string"
+          example: "Artikel 1 Nr. 14, Artikel 3 Nr. 4, Artikel 4 Nr. 4"
+      required:
+        - "datum"
+    PersonRole:
+      description:
+        "Liefert den Eintrag einer Person in einer bestimmten Rolle oder\
+        \ Funktion."
+      type: "object"
+      properties:
+        funktion:
+          type: "string"
+          example: "LMin Soz u. Frauen"
+        funktionszusatz:
+          type: "string"
+          example: "Stellv. MdBR"
+        fraktion:
+          type: "string"
+          example: "CDU/CSU"
+        nachname:
+          type: "string"
+          example: "Leyen"
+        vorname:
+          type: "string"
+          example: "Ursula"
+        namenszusatz:
+          type: "string"
+          example: "von der"
+        wahlperiode_nummer:
+          type: "array"
+          items:
+            type: "integer"
+            format: "int32"
+          example:
+            - 17
+            - 18
+            - 19
+          description: "Wahlperioden, fÃ¼r die der Personeneintrag zutrifft"
+        wahlkreiszusatz:
+          type: "string"
+          example: "Hannover"
+        ressort_titel:
+          type: "string"
+          example: "Bundesministerium fÃ¼r Familie, Senioren, Frauen und Jugend"
+        bundesland:
+          $ref: "#/components/schemas/Bundesland"
+      required:
+        - "funktion"
+        - "nachname"
+        - "vorname"
+    Ressort:
+      description:
+        "Liefert das Ressort (Bundesministerium), das innerhalb der Bundesregierung\
+        \ federfÃ¼hrend fÃ¼r die Ausarbeitung z. B. eines Gesetzentwurfs oder eines\
+        \ Antrags oder die Beantwortung von Anfragen ist. Wird nur verwendet, wenn\
+        \ Urheber einer Drucksache die Bundesregierung ist.\n\nDas Ressort wird auch\
+        \ bei persÃ¶nlichen Urhebern verwendet, um die Funktion von AngehÃ¶rigen der\
+        \ Bundesregierung zu prÃ¤zisieren, z. B. â€žDr. Robert Habeck, Bundesmin., Bundesministerium\
+        \ fÃ¼r Wirtschaft und Klimaschutzâ€œ oder â€žDr. Florian Toncar, Parl. Staatssekr.,\
+        \ Bundesministerium der Finanzenâ€œ.\n"
+      type: "object"
+      properties:
+        federfuehrend:
+          type: "boolean"
+          example: true
+        titel:
+          type: "string"
+          example: "Bundesministerium fÃ¼r Wirtschaft und Energie"
+      required:
+        - "federfuehrend"
+        - "titel"
+    Ueberweisung:
+      description:
+        "Liefert den Ausschuss bzw. die AusschÃ¼sse, an die eine Drucksache\
+        \ Ã¼berwiesen wurde, unter Angabe der FederfÃ¼hrung und ggf. der Ãœberweisungsart\
+        \ (z. B. â€žgemÃ¤ÃŸ Â§ 96 GeschÃ¤ftsordnung BTâ€œ)."
+      type: "object"
+      properties:
+        ausschuss:
+          type: "string"
+          example: "Ausschuss fÃ¼r WahlprÃ¼fung, ImmunitÃ¤t und GeschÃ¤ftsordnung"
+        ausschuss_kuerzel:
+          type: "string"
+          example: "AfWIuG"
+        federfuehrung:
+          type: "boolean"
+          example: true
+        ueberweisungsart:
+          type: "string"
+          example: "gemÃ¤ÃŸ Â§ 96 GeschÃ¤ftsordnung BT"
+      required:
+        - "ausschuss"
+        - "ausschuss_kuerzel"
+        - "federfuehrung"
+    Urheber:
+      description:
+        "Liefert den kÃ¶rperschaftlichen Urheber einer Bundestags- oder\
+        \ Bundesratsdrucksache, z. B. einen Ausschuss, eine Fraktion, die Bundesregierung,\
+        \ ein Bundesland oder dergleichen."
+      type: "object"
+      properties:
+        einbringer:
+          type: "boolean"
+        bezeichnung:
+          type: "string"
+          example: "B90/GR"
+        titel:
+          type: "string"
+          example: "Fraktion BÃœNDNIS 90/DIE GRÃœNEN"
+        rolle:
+          type: "string"
+          enum:
+            - "B"
+            - "U"
+      required:
+        - "bezeichnung"
+        - "titel"
+    Verkuendung:
+      description:
+        "Liefert die Angaben zur VerkÃ¼ndung eines Gesetzes: Ausfertigungs-\
+        \ und VerkÃ¼ndungsdatum sowie die Fundstelle im jeweiligen VerkÃ¼ndungsblatt.\
+        \ Bei Bundesgesetzblatt I und II ist die Fundstelle verlinkt.\n"
+      type: "object"
+      properties:
+        jahrgang:
+          type: "string"
+          example: "2018"
+        heftnummer:
+          type: "string"
+          example: "11"
+        seite:
+          type: "string"
+          example: "409"
+        ausfertigungsdatum:
+          type: "string"
+          format: "date"
+          example: "2018-03-19"
+        verkuendungsdatum:
+          type: "string"
+          format: "date"
+          example: "2018-03-29"
+        rubrik_nr:
+          type: "string"
+          example: "V1"
+        einleitungstext:
+          type: "string"
+          example: "Bekanntmachung"
+        verkuendungsblatt_bezeichnung:
+          type: "string"
+          example: "Bundesgesetzblatt Teil I"
+        verkuendungsblatt_kuerzel:
+          type: "string"
+          example: "BGBl I"
+        fundstelle:
+          type: "string"
+          example: "BGBl I 2018, 409"
+        pdf_url:
+          type: "string"
+          example: "https://www.bgbl.de/xaver/bgbl/start.xav?startbk=Bundesanzeiger_BGBl&start=//*%5b@attr_id=%27bgbl118s0409.pdf%27%5d"
+        titel:
+          type: "string"
+          example:
+            "Bekanntmachung Ã¼ber die Ãœbernahme des Beschlusses des Deutschen\
+            \ Bundestages betr. Aufhebung der ImmunitÃ¤t von Mitgliedern des Bundestages\
+            \ und der GrundsÃ¤tze in ImmunitÃ¤tsangelegenheiten"
+      required:
+        - "jahrgang"
+        - "seite"
+        - "ausfertigungsdatum"
+        - "verkuendungsdatum"
+        - "einleitungstext"
+        - "fundstelle"
+    VorgangDeskriptor:
+      allOf:
+        - $ref: "#/components/schemas/Deskriptor"
+        - type: "object"
+          description:
+            "Liefert diejenigen mit einem Vorgang zu dessen inhaltlicher\
+            \ Beschreibung verknÃ¼pften SchlagwÃ¶rter, denen zur Kennzeichnung ihrer zentralen\
+            \ Bedeutung fÃ¼r den Vorgang das Attribut â€žFundstelleâ€œ zugewiesen wurde.\
+            \ Die SchlagwÃ¶rter (Deskriptoren) entstammen dem kontrollierten Vokabular\
+            \ des Parlamentsthesaurus ANTHES/PARTHES und stehen in thematischer Beziehung\
+            \ zueinander.\n\nSiehe auch: Deskriptor\n"
+          properties:
+            fundstelle:
+              type: "boolean"
+              example: true
+              description: "Kennzeichnet Deskriptoren mit zentraler Bedeutung"
+          required:
+            - "fundstelle"
+    Vorgangsbezug:
+      description:
+        "Liefert ID, Titel und Vorgangstyp eines Vorgangs, der mit der\
+        \ Drucksache oder dem Plenarprotokoll verbunden ist."
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          pattern: "^\\d+$"
+          example: "84393"
+          description: "ID eines verknÃ¼pften Vorgangs"
+        titel:
+          type: "string"
+          example: "ErÃ¶ffnung der 1. Sitzung des 19. Deutschen Bundestages"
+        vorgangstyp:
+          type: "string"
+          example: "Ansprache/ErklÃ¤rung/Mitteilung"
+      required:
+        - "id"
+        - "titel"
+        - "vorgangstyp"
+    Vorgangspositionbezug:
+      allOf:
+        - $ref: "#/components/schemas/Vorgangsbezug"
+        - type: "object"
+          description:
+            "Liefert ID, Titel und Vorgangstyp eines Vorgangs sowie die Bezeichnung\
+            \ der Vorgangsposition, z. B. Ansprache, Antrag, Gesetzentwurf, auf die\
+            \ in einer AktivitÃ¤t oder im Vorgangsablauf Bezug genommen wird."
+          properties:
+            vorgangsposition:
+              type: "string"
+              example: "Ansprache"
+          required:
+            - "vorgangsposition"
+    VorgangVerlinkung:
+      description:
+        "Verlinkte Verweisung von einem Vorgang auf einen anderen Vorgang,\
+        \ zu dem eine besondere inhaltliche Verbindung besteht."
+      type: "object"
+      properties:
+        id:
+          type: "string"
+          pattern: "^\\d+$"
+          example: "282237"
+          description: "ID eines verknÃ¼pften Vorgangs"
+        verweisung:
+          type: "string"
+          example: "Bericht"
+        titel:
+          type: "string"
+          example:
+            "Zwischenbericht zur Reform des Bundeswahlrechts und zur Modernisierung\
+            \ der Parlamentsarbeit"
+        wahlperiode:
+          type: "integer"
+          format: "int32"
+          example: 19
+        gesta:
+          type: "string"
+      required:
+        - "verweisung"
+        - "titel"
+        - "id"
+        - "wahlperiode"
+    Bundesland:
+      description:
+        "Das Bundesland wird bei persÃ¶nlichen Urhebern verwendet, die Mitglieder\
+        \ des Bundesrates sind, z. B. â€žReinhold Hilbers, MdBR (Finanzminister), Niedersachsenâ€œ"
+      type: "string"
+      enum:
+        - "Baden-WÃ¼rttemberg"
+        - "Bayern"
+        - "Berlin"
+        - "Brandenburg"
+        - "Bremen"
+        - "Hamburg"
+        - "Hessen"
+        - "Mecklenburg-Vorpommern"
+        - "Niedersachsen"
+        - "Nordrhein-Westfalen"
+        - "Rheinland-Pfalz"
+        - "Saarland"
+        - "Sachsen"
+        - "Sachsen-Anhalt"
+        - "Schleswig-Holstein"
+        - "ThÃ¼ringen"
+      example: "Niedersachsen"
+    Datum:
+      description: "Liefert das Datum eines Dokuments (Drucksache oder Protokoll)."
+      type: "string"
+      format: "date"
+    Quadrant:
+      description:
+        "Teil der Fundstelle eines Plenarprotokolls. Jede Seite im Plenarprotokoll\
+        \ ist in vier gleich groÃŸe Viertel unterteilt (Quadranten) mit den Bezeichnungen\
+        \ A, B, C, D."
+      type: "string"
+      enum:
+        - "A"
+        - "B"
+        - "C"
+        - "D"
+    Zuordnung:
+      description:
+        "Jeder Vorgangsschritt ist entweder dem Bundestag (BT), dem Bundesrat\
+        \ (BR), der Bundesversammlung (BV) oder der Europakammer (EK) zugeordnet.\
+        \ Ãœber die Zuordnung lassen sich bspw. Rechtsverordnungen herausfiltern, an\
+        \ denen der Bundestag beteiligt / nicht beteiligt war."
+      type: "string"
+      enum:
+        - "BT"
+        - "BR"
+        - "BV"
+        - "EK"
