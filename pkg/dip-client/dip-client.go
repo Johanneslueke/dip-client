@@ -175,6 +175,54 @@ func (c *Client) GetAktivitaetList(ctx context.Context, params *client.GetAktivi
 	return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode())
 }
 
+func (c *Client) GetAktivitaetComplete(ctx context.Context, id client.Id, params *client.GetAktivitaetListParams) (<-chan *client.AktivitaetListResponse, <-chan error) {
+	resultChan := make(chan *client.AktivitaetListResponse)
+	errChan := make(chan error, 1)
+
+	go func() {
+		defer close(resultChan)
+		defer close(errChan)
+
+		res, err := c.GetAktivitaetList(ctx, params)
+		if err != nil {
+			errChan <- err
+			return
+		}
+
+		prevCursor := ""
+		for {
+			select {
+			case <-ctx.Done():
+				errChan <- ctx.Err()
+				return
+			default:
+				if res.Cursor == prevCursor {
+					return
+				}
+				prevCursor = res.Cursor
+
+				// send result
+				select {
+				case resultChan <- res:
+				case <-ctx.Done():
+					errChan <- ctx.Err()
+					return
+				}
+
+				// fetch next page
+				params.Cursor = &res.Cursor
+				res, err = c.GetAktivitaetList(ctx, params)
+				if err != nil {
+					errChan <- err
+					return
+				}
+			}
+		}
+	}()
+
+	return resultChan, errChan
+}
+
 // GetDrucksache retrieves a single Drucksache by ID
 func (c *Client) GetDrucksache(ctx context.Context, id client.Id, params *client.GetDrucksacheParams) (*client.Drucksache, error) {
 	resp, err := c.client.GetDrucksacheWithResponse(ctx, id, params)
