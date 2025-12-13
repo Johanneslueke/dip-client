@@ -1,0 +1,97 @@
+name: Release
+
+on:
+  release:
+    types: [created]
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.4"
+
+      - name: Run tests
+        run: go test -v ./pkg/dip-client
+
+  build:
+    name: Build and Upload Release Assets
+    needs: test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [linux, darwin, windows]
+        goarch: [amd64, arm64]
+        exclude:
+          - goos: windows
+            goarch: arm64
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.4"
+
+      - name: Build unified CLI
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          mkdir -p dist
+          EXT=""
+          if [ "$GOOS" = "windows" ]; then
+            EXT=".exe"
+          fi
+          OUTPUT_NAME="dip-${{ matrix.goos }}-${{ matrix.goarch }}${EXT}"
+          go build -o "dist/${OUTPUT_NAME}" -ldflags="-s -w -X main.version=${{ github.ref_name }}" ./cmd/dip
+          cd dist
+          if [ "$GOOS" = "windows" ]; then
+            zip "${OUTPUT_NAME}.zip" "${OUTPUT_NAME}"
+          else
+            tar czf "${OUTPUT_NAME}.tar.gz" "${OUTPUT_NAME}"
+          fi
+
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/*.tar.gz
+            dist/*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish:
+    name: Publish Go Module
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.4"
+
+      - name: Verify module
+        run: |
+          go mod verify
+          go mod tidy
+          git diff --exit-code go.mod go.sum
+
+      - name: Publish release
+        run: |
+          echo "Release ${{ github.ref_name }} published"
+          echo "Go module can be installed with: go get github.com/${{ github.repository }}@${{ github.ref_name }}"
