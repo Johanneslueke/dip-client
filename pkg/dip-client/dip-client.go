@@ -1,3 +1,6 @@
+// Package dipclient provides an ergonomic wrapper around the generated DIP API client.
+// It re-exports all types from the internal generated client for convenient use without
+// requiring imports from internal packages.
 package dipclient
 
 import (
@@ -8,12 +11,13 @@ import (
 	client "github.com/Johanneslueke/dip-client/internal/gen"
 )
 
-// Re-exported types from the generated client
-// This allows users to only import the dipclient package without needing to import the internal client package
+// Re-exported types from the generated client.
+// This allows users to only import the dipclient package without needing to import the internal client package.
 type (
-	// Core types
-	Id       = client.Id
-	IdFilter = client.IdFilter
+	// ID is a unique identifier for DIP API resources.
+	ID = client.Id
+	// IDFilter is used to filter resources by their unique identifier.
+	IDFilter = client.IdFilter
 
 	// Aktivitaet types
 	Aktivitaet              = client.Aktivitaet
@@ -67,6 +71,8 @@ type (
 	GetVorgangspositionListParams = client.GetVorgangspositionListParams
 
 	// Supporting types
+
+	// Beschlussfassung represents a decision or resolution in the parliamentary process.
 	Beschlussfassung      = client.Beschlussfassung
 	Deskriptor            = client.Deskriptor
 	Fundstelle            = client.Fundstelle
@@ -78,6 +84,8 @@ type (
 	Vorgangspositionbezug = client.Vorgangspositionbezug
 
 	// Filter types for query parameters
+
+	// Cursor is used for pagination through result sets.
 	Cursor                  = client.Cursor
 	WahlperiodeFilter       = client.WahlperiodeFilter
 	DatumStartFilter        = client.DatumStartFilter
@@ -93,11 +101,15 @@ type (
 	GestaFilter             = client.GestaFilter
 
 	// Dokumentart filter types
+
+	// GetAktivitaetListParamsFDokumentart specifies the document type filter for Aktivitaet lists.
 	GetAktivitaetListParamsFDokumentart       = client.GetAktivitaetListParamsFDokumentart
 	GetVorgangListParamsFDokumentart          = client.GetVorgangListParamsFDokumentart
 	GetVorgangspositionListParamsFDokumentart = client.GetVorgangspositionListParamsFDokumentart
 
 	// Format types
+
+	// GetAktivitaetListParamsFormat specifies the response format (JSON or XML) for Aktivitaet lists.
 	GetAktivitaetListParamsFormat          = client.GetAktivitaetListParamsFormat
 	GetDrucksacheListParamsFormat          = client.GetDrucksacheListParamsFormat
 	GetDrucksacheTextListParamsFormat      = client.GetDrucksacheTextListParamsFormat

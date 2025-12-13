@@ -40,7 +40,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	plenarprotokollText, err := client.GetPlenarprotokollText(ctx, dipclient.Id(*id), nil)
+	plenarprotokollText, err := client.GetPlenarprotokollText(ctx, dipclient.ID(*id), nil)
 	if err != nil {
 		log.Fatalf("Failed to get plenarprotokoll text: %v", err)
 	}

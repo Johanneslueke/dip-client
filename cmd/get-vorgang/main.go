@@ -40,7 +40,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	vorgang, err := client.GetVorgang(ctx, dipclient.Id(*id), nil)
+	vorgang, err := client.GetVorgang(ctx, dipclient.ID(*id), nil)
 	if err != nil {
 		log.Fatalf("Failed to get vorgang: %v", err)
 	}

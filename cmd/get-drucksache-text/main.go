@@ -40,7 +40,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	drucksacheText, err := client.GetDrucksacheText(ctx, dipclient.Id(*id), nil)
+	drucksacheText, err := client.GetDrucksacheText(ctx, dipclient.ID(*id), nil)
 	if err != nil {
 		log.Fatalf("Failed to get drucksache text: %v", err)
 	}

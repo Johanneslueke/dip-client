@@ -40,7 +40,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	aktivitaet, err := client.GetAktivitaet(ctx, dipclient.Id(*id), nil)
+	aktivitaet, err := client.GetAktivitaet(ctx, dipclient.ID(*id), nil)
 	if err != nil {
 		log.Fatalf("Failed to get aktivitaet: %v", err)
 	}

@@ -40,7 +40,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	person, err := client.GetPerson(ctx, dipclient.Id(*id), nil)
+	person, err := client.GetPerson(ctx, dipclient.ID(*id), nil)
 	if err != nil {
 		log.Fatalf("Failed to get person: %v", err)
 	}

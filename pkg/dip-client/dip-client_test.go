@@ -129,7 +129,7 @@ func TestNew(t *testing.T) {
 
 func TestClient_GetAktivitaet(t *testing.T) {
 	ctx := context.Background()
-	testID := Id(123)
+	testID := ID(123)
 
 	tests := []struct {
 		name    string
@@ -230,7 +230,7 @@ func TestClient_GetAktivitaetList(t *testing.T) {
 
 func TestClient_GetDrucksache(t *testing.T) {
 	ctx := context.Background()
-	testID := Id(456)
+	testID := ID(456)
 
 	tests := []struct {
 		name    string
@@ -293,7 +293,7 @@ func TestClient_GetDrucksacheList(t *testing.T) {
 
 func TestClient_GetDrucksacheText(t *testing.T) {
 	ctx := context.Background()
-	testID := Id(111)
+	testID := ID(111)
 
 	c := &Client{
 		client: wrapMock(&mockClientWithResponses{
@@ -336,7 +336,7 @@ func TestClient_GetDrucksacheTextList(t *testing.T) {
 
 func TestClient_GetPerson(t *testing.T) {
 	ctx := context.Background()
-	testID := Id(789)
+	testID := ID(789)
 
 	c := &Client{
 		client: wrapMock(&mockClientWithResponses{
@@ -379,7 +379,7 @@ func TestClient_GetPersonList(t *testing.T) {
 
 func TestClient_GetPlenarprotokoll(t *testing.T) {
 	ctx := context.Background()
-	testID := Id(222)
+	testID := ID(222)
 
 	c := &Client{
 		client: wrapMock(&mockClientWithResponses{
@@ -422,7 +422,7 @@ func TestClient_GetPlenarprotokollList(t *testing.T) {
 
 func TestClient_GetPlenarprotokollText(t *testing.T) {
 	ctx := context.Background()
-	testID := Id(333)
+	testID := ID(333)
 
 	c := &Client{
 		client: wrapMock(&mockClientWithResponses{
@@ -465,7 +465,7 @@ func TestClient_GetPlenarprotokollTextList(t *testing.T) {
 
 func TestClient_GetVorgang(t *testing.T) {
 	ctx := context.Background()
-	testID := Id(101)
+	testID := ID(101)
 
 	c := &Client{
 		client: wrapMock(&mockClientWithResponses{
@@ -508,7 +508,7 @@ func TestClient_GetVorgangList(t *testing.T) {
 
 func TestClient_GetVorgangsposition(t *testing.T) {
 	ctx := context.Background()
-	testID := Id(202)
+	testID := ID(202)
 
 	c := &Client{
 		client: wrapMock(&mockClientWithResponses{

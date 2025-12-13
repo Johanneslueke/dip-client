@@ -40,7 +40,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	vorgangsposition, err := client.GetVorgangsposition(ctx, dipclient.Id(*id), nil)
+	vorgangsposition, err := client.GetVorgangsposition(ctx, dipclient.ID(*id), nil)
 	if err != nil {
 		log.Fatalf("Failed to get vorgangsposition: %v", err)
 	}

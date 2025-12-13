@@ -15,7 +15,7 @@ import (
 type filterParams struct {
 	cursor          *dipclient.Cursor
 	wahlperiode     *dipclient.WahlperiodeFilter
-	id              *dipclient.IdFilter
+	id              *dipclient.IDFilter
 	drucksache      *dipclient.DrucksacheFilter
 	plenarprotokoll *dipclient.PlenarprotokollFilter
 	dokumentnummer  *dipclient.DokumentnummerFilter
@@ -39,7 +39,7 @@ func main() {
 		format           = flag.String("format", "", "Response format: json or xml")
 		cursor           = flag.String("cursor", "", "Cursor for pagination")
 		wahlperiode      = flag.Int("wahlperiode", 0, "Wahlperiode filter")
-		fId              = flag.Int("f.id", 0, "Filter by ID")
+		fID              = flag.Int("f.id", 0, "Filter by ID")
 		fDrucksache      = flag.Int("f.drucksache", 0, "Filter by Drucksache ID")
 		fPlenarprotokoll = flag.Int("f.plenarprotokoll", 0, "Filter by Plenarprotokoll ID")
 		fDokumentnummer  = flag.String("f.dokumentnummer", "", "Filter by Dokumentnummer")
@@ -91,11 +91,11 @@ func main() {
 		return &w
 	}
 
-	idFilterPtr := func() *dipclient.IdFilter {
-		if *fId == 0 {
+	idFilterPtr := func() *dipclient.IDFilter {
+		if *fID == 0 {
 			return nil
 		}
-		f := dipclient.IdFilter(*fId)
+		f := dipclient.IDFilter(*fID)
 		return &f
 	}
 
@@ -171,10 +171,10 @@ func main() {
 	}
 
 	// Dispatch table for endpoints
-	type endpointHandler func(ctx context.Context, listMode bool, resourceId dipclient.Id, f filterParams) (interface{}, error)
+	type endpointHandler func(ctx context.Context, listMode bool, resourceId dipclient.ID, f filterParams) (interface{}, error)
 
 	handlers := map[string]endpointHandler{
-		"aktivitaet": func(ctx context.Context, listMode bool, resourceId dipclient.Id, f filterParams) (interface{}, error) {
+		"aktivitaet": func(ctx context.Context, listMode bool, resourceId dipclient.ID, f filterParams) (interface{}, error) {
 			if listMode {
 				params := &dipclient.GetAktivitaetListParams{
 					Cursor:           f.cursor,
@@ -199,7 +199,7 @@ func main() {
 			}
 			return client.GetAktivitaet(ctx, resourceId, nil)
 		},
-		"drucksache": func(ctx context.Context, listMode bool, resourceId dipclient.Id, f filterParams) (interface{}, error) {
+		"drucksache": func(ctx context.Context, listMode bool, resourceId dipclient.ID, f filterParams) (interface{}, error) {
 			if listMode {
 				params := &dipclient.GetDrucksacheListParams{
 					Cursor:          f.cursor,
@@ -217,7 +217,7 @@ func main() {
 			}
 			return client.GetDrucksache(ctx, resourceId, nil)
 		},
-		"drucksache-text": func(ctx context.Context, listMode bool, resourceId dipclient.Id, f filterParams) (interface{}, error) {
+		"drucksache-text": func(ctx context.Context, listMode bool, resourceId dipclient.ID, f filterParams) (interface{}, error) {
 			if listMode {
 				params := &dipclient.GetDrucksacheTextListParams{
 					Cursor:          f.cursor,
@@ -235,7 +235,7 @@ func main() {
 			}
 			return client.GetDrucksacheText(ctx, resourceId, nil)
 		},
-		"person": func(ctx context.Context, listMode bool, resourceId dipclient.Id, f filterParams) (interface{}, error) {
+		"person": func(ctx context.Context, listMode bool, resourceId dipclient.ID, f filterParams) (interface{}, error) {
 			if listMode {
 				params := &dipclient.GetPersonListParams{
 					Cursor:       f.cursor,
@@ -250,7 +250,7 @@ func main() {
 			}
 			return client.GetPerson(ctx, resourceId, nil)
 		},
-		"plenarprotokoll": func(ctx context.Context, listMode bool, resourceId dipclient.Id, f filterParams) (interface{}, error) {
+		"plenarprotokoll": func(ctx context.Context, listMode bool, resourceId dipclient.ID, f filterParams) (interface{}, error) {
 			if listMode {
 				params := &dipclient.GetPlenarprotokollListParams{
 					Cursor:          f.cursor,
@@ -267,7 +267,7 @@ func main() {
 			}
 			return client.GetPlenarprotokoll(ctx, resourceId, nil)
 		},
-		"plenarprotokoll-text": func(ctx context.Context, listMode bool, resourceId dipclient.Id, f filterParams) (interface{}, error) {
+		"plenarprotokoll-text": func(ctx context.Context, listMode bool, resourceId dipclient.ID, f filterParams) (interface{}, error) {
 			if listMode {
 				params := &dipclient.GetPlenarprotokollTextListParams{
 					Cursor:          f.cursor,
@@ -284,7 +284,7 @@ func main() {
 			}
 			return client.GetPlenarprotokollText(ctx, resourceId, nil)
 		},
-		"vorgang": func(ctx context.Context, listMode bool, resourceId dipclient.Id, f filterParams) (interface{}, error) {
+		"vorgang": func(ctx context.Context, listMode bool, resourceId dipclient.ID, f filterParams) (interface{}, error) {
 			if listMode {
 				params := &dipclient.GetVorgangListParams{
 					Cursor:           f.cursor,
@@ -309,7 +309,7 @@ func main() {
 			}
 			return client.GetVorgang(ctx, resourceId, nil)
 		},
-		"vorgangsposition": func(ctx context.Context, listMode bool, resourceId dipclient.Id, f filterParams) (interface{}, error) {
+		"vorgangsposition": func(ctx context.Context, listMode bool, resourceId dipclient.ID, f filterParams) (interface{}, error) {
 			if listMode {
 				params := &dipclient.GetVorgangspositionListParams{
 					Cursor:           f.cursor,
@@ -341,7 +341,7 @@ func main() {
 		log.Fatalf("Unknown endpoint: %s", *endpoint)
 	}
 
-	result, err = handler(ctx, *list, dipclient.Id(*id), filters)
+	result, err = handler(ctx, *list, dipclient.ID(*id), filters)
 
 	if err != nil {
 		log.Fatalf("API error: %v", err)

@@ -27,7 +27,7 @@ func TestSystem_AllFilters(t *testing.T) {
 
 	t.Run("IntegerFilters", func(t *testing.T) {
 		// Test FId filter (int type)
-		idFilter := dipclient.IdFilter(318274)
+		idFilter := dipclient.IDFilter(318274)
 		result, err := client.GetAktivitaetList(ctx, &dipclient.GetAktivitaetListParams{
 			FId: &idFilter,
 		})
@@ -111,7 +111,7 @@ func TestSystem_AllFilters(t *testing.T) {
 
 	t.Run("EndpointSpecificFilters", func(t *testing.T) {
 		// Verify that DrucksacheText doesn't accept FDrucksache (should use FId instead)
-		idFilter := dipclient.IdFilter(306952)
+		idFilter := dipclient.IDFilter(306952)
 		wahlperiode := dipclient.WahlperiodeFilter(20)
 
 		result, err := client.GetDrucksacheTextList(ctx, &dipclient.GetDrucksacheTextListParams{
