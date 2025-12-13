@@ -7,63 +7,78 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"sync"
 	"time"
 
 	db "github.com/Johanneslueke/dip-client/internal/database/gen/sqlite"
 	client "github.com/Johanneslueke/dip-client/internal/gen"
+	"github.com/Johanneslueke/dip-client/internal/utility"
 	dipclient "github.com/Johanneslueke/dip-client/pkg/dip-client"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 	"github.com/pressly/goose/v3"
 	_ "modernc.org/sqlite"
 )
 
-type rateLimiter struct {
-	tokens     int
-	maxTokens  int
-	interval   time.Duration
-	lastRefill time.Time
-	mu         sync.Mutex
+
+
+type progressTracker struct {
+	startTime time.Time
+	total     int
+	limit     int
 }
 
-func newRateLimiter(maxRequests int, interval time.Duration) *rateLimiter {
-	return &rateLimiter{
-		tokens:     maxRequests,
-		maxTokens:  maxRequests,
-		interval:   interval,
-		lastRefill: time.Now(),
+func newProgressTracker(limit int) *progressTracker {
+	return &progressTracker{
+		startTime: time.Now(),
+		limit:     limit,
 	}
 }
 
-func (rl *rateLimiter) Wait(ctx context.Context) error {
-	rl.mu.Lock()
-	defer rl.mu.Unlock()
+func (pt *progressTracker) formatDuration(d time.Duration) string {
+	if d.Hours() >= 1 {
+		hours := int(d.Hours())
+		minutes := int(d.Minutes()) % 60
+		return fmt.Sprintf("%dh%dm", hours, minutes)
+	}
+	return fmt.Sprintf("%.0fm", d.Minutes())
+}
 
-	for {
-		now := time.Now()
-		elapsed := now.Sub(rl.lastRefill)
-
-		if elapsed >= rl.interval {
-			rl.tokens = rl.maxTokens
-			rl.lastRefill = now
+func (pt *progressTracker) printProgress(current, totalAvailable int) {
+	elapsed := time.Since(pt.startTime)
+	rate := float64(pt.total) / elapsed.Seconds()
+	
+	timeStr := pt.formatDuration(elapsed)
+	
+	// Calculate estimated remaining time
+	var etaStr string
+	if rate > 0 && current > 0 {
+		remaining := totalAvailable - current
+		if pt.limit > 0 && pt.limit < totalAvailable {
+			remaining = pt.limit - current
 		}
-
-		if rl.tokens > 0 {
-			rl.tokens--
-			return nil
-		}
-
-		waitTime := rl.interval - elapsed
-		rl.mu.Unlock()
-
-		select {
-		case <-ctx.Done():
-			rl.mu.Lock()
-			return ctx.Err()
-		case <-time.After(waitTime):
-			rl.mu.Lock()
+		if remaining > 0 {
+			etaSeconds := float64(remaining) / rate
+			etaDuration := time.Duration(etaSeconds) * time.Second
+			etaStr = fmt.Sprintf(", ETA %s", pt.formatDuration(etaDuration))
 		}
 	}
+	
+	fmt.Printf("\rFetched %d vorgänge (%.1f/sec, %.1f%% of %d total, %s%s)    ",
+		current,
+		rate,
+		float64(current)/float64(totalAvailable)*100,
+		totalAvailable,
+		timeStr,
+		etaStr)
+}
+
+func (pt *progressTracker) increment() {
+	pt.total++
+}
+
+func (pt *progressTracker) getStats() (elapsed time.Duration, rate float64) {
+	elapsed = time.Since(pt.startTime)
+	rate = float64(pt.total) / elapsed.Seconds()
+	return
 }
 
 func main() {
@@ -107,11 +122,10 @@ func main() {
 
 	queries := db.New(sqlDB)
 	ctx := context.Background()
-	limiter := newRateLimiter(23, time.Minute)
+	limiter := utility.NewRateLimiter(23, time.Minute)
+	progress := newProgressTracker(*limit)
 
 	var cursor *string
-	totalElements := 0
-	startTime := time.Now()
 
 	log.Printf("Starting to fetch vorgänge from API...")
 
@@ -133,66 +147,15 @@ func main() {
 			break
 		}
 
-		// Print progress on same line using carriage return
-		elapsed := time.Since(startTime)
-		rate := float64(totalElements) / elapsed.Seconds()
-		currentTotal := totalElements + len(resp.Documents)
-
-		// Format elapsed time
-		var timeStr string
-		if elapsed.Hours() >= 1 {
-			hours := int(elapsed.Hours())
-			minutes := int(elapsed.Minutes()) % 60
-			seconds := int(elapsed.Seconds()) % 60
-			timeStr = fmt.Sprintf("%dh%dm%ds", hours, minutes, seconds)
-		} else if elapsed.Minutes() >= 1 {
-			hours := int(elapsed.Hours())
-			minutes := int(elapsed.Minutes()) % 60
-			seconds := int(elapsed.Seconds()) % 60
-			timeStr = fmt.Sprintf("%dh%dm%ds", hours, minutes, seconds)
-		} else {
-			timeStr = fmt.Sprintf("%.0fm", elapsed.Minutes())
-		}
-
-		// Calculate estimated remaining time
-		var etaStr string
-		if rate > 0 && currentTotal > 0 {
-			remaining := resp.NumFound - int32(currentTotal)
-			if *limit > 0 && *limit < int(resp.NumFound) {
-				remaining = int32(*limit) - int32(currentTotal)
-			}
-			if remaining > 0 {
-				etaSeconds := float64(remaining) / rate
-				etaDuration := time.Duration(etaSeconds) * time.Second
-				hours := int(etaDuration.Hours())
-				minutes := int(etaDuration.Minutes()) % 60
-				seconds := int(etaDuration.Seconds()) % 60
-				if etaDuration.Hours() >= 1 {
-
-					etaStr = fmt.Sprintf(", ETA %dh%dm%ds", hours, minutes, seconds)
-				} else if etaDuration.Minutes() >= 1 {
-					etaStr = fmt.Sprintf(", ETA %dh%dm%ds", hours, minutes, seconds)
-				} else {
-					etaStr = fmt.Sprintf(", ETA %.0fm", etaDuration.Minutes())
-				}
-			}
-		}
-
-		fmt.Printf("\rFetched %d vorgänge (%.1f/sec, %.1f%% of %d total, %s %s)    ",
-			currentTotal,
-			rate,
-			float64(currentTotal)/float64(resp.NumFound)*100,
-			resp.NumFound,
-			timeStr,
-			etaStr)
+		progress.printProgress(progress.total+len(resp.Documents), int(resp.NumFound))
 
 		for _, vorgang := range resp.Documents {
 			if err := storeVorgang(ctx, queries, vorgang); err != nil {
 				log.Printf("Warning: Failed to store vorgang %s: %v", vorgang.Id, err)
 			}
-			totalElements++
+			progress.increment()
 
-			if *limit > 0 && totalElements >= *limit {
+			if *limit > 0 && progress.total >= *limit {
 				fmt.Println() // New line before final message
 				log.Printf("Reached limit of %d vorgänge", *limit)
 				goto done
@@ -207,10 +170,9 @@ func main() {
 
 done:
 	fmt.Println() // New line after progress updates
-	elapsed := time.Since(startTime)
-	rate := float64(totalElements) / elapsed.Seconds()
+	elapsed, rate := progress.getStats()
 	log.Printf("Successfully stored %d vorgänge in database %s (%.1f/sec, took %s)",
-		totalElements, *dbPath, rate, elapsed.Round(time.Second))
+		progress.total, *dbPath, rate, elapsed.Round(time.Second))
 
 }
 
