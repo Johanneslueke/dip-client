@@ -6,6 +6,7 @@ package dipclient
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 
 	client "github.com/Johanneslueke/dip-client/internal/gen"
@@ -122,8 +123,9 @@ type (
 
 // Client wraps the generated API client with a more ergonomic interface
 type Client struct {
-	client client.ClientWithResponsesInterface
-	apiKey string
+	client    client.ClientWithResponsesInterface
+	rawClient client.ClientInterface
+	apiKey    string
 }
 
 // Config holds configuration for the DIP client
@@ -134,20 +136,25 @@ type Config struct {
 
 // New creates a new DIP API client
 func New(cfg Config) (*Client, error) {
-	c, err := client.NewClientWithResponses(
-		cfg.BaseURL,
-		client.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
-			req.Header.Set("Authorization", fmt.Sprintf("ApiKey %s", cfg.APIKey))
-			return nil
-		}),
-	)
+	authEditor := client.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
+		req.Header.Set("Authorization", fmt.Sprintf("ApiKey %s", cfg.APIKey))
+		return nil
+	})
+	
+	c, err := client.NewClientWithResponses(cfg.BaseURL, authEditor)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create client: %w", err)
 	}
+	
+	rawClient, err := client.NewClient(cfg.BaseURL, authEditor)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create raw client: %w", err)
+	}
 
 	return &Client{
-		client: c,
-		apiKey: cfg.APIKey,
+		client:    c,
+		rawClient: rawClient,
+		apiKey:    cfg.APIKey,
 	}, nil
 }
 
@@ -293,6 +300,26 @@ func (c *Client) GetPersonList(ctx context.Context, params *client.GetPersonList
 		return resp.JSON200, nil
 	}
 	return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode())
+}
+
+// GetPersonListRaw retrieves raw JSON response for person list (useful for handling API inconsistencies)
+func (c *Client) GetPersonListRaw(ctx context.Context, params *client.GetPersonListParams) ([]byte, error) {
+	resp, err := c.rawClient.GetPersonList(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("API request failed: %w", err)
+	}
+	defer resp.Body.Close()
+	
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+	
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("unexpected status code: %d, body: %s", resp.StatusCode, string(body))
+	}
+	
+	return body, nil
 }
 
 // GetPlenarprotokoll retrieves a single Plenarprotokoll by ID

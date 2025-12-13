@@ -1429,20 +1429,24 @@ components:
           type: "string"
           example: "Person"
         wahlperiode:
-          type: "integer"
-          format: "int32"
-          example: 15
-          description: "Wahlperiode des ersten zugehÃ¶rigen Dokuments"
+          type: "array"
+          example: "[15,234,13]"
+          items:
+            type: "integer"
+            format: "int32"
+            example: 19
+            description: "Wahlperiode, in der die Person aktiv war"
+          
         basisdatum:
           type: "string"
           format: "date"
           example: "2003-09-09"
-          description: "Datum des ersten zugehÃ¶rigen Dokuments"
+          description: "Datum des ersten zugehörigen Dokuments"
         datum:
           type: "string"
           format: "date"
           example: "2019-06-25"
-          description: "Datum des letzten zugehÃ¶rigen Dokuments"
+          description: "Datum des letzten zugehörigen Dokuments"
         aktualisiert:
           type: "string"
           format: "date-time"

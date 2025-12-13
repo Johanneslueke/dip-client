@@ -42,7 +42,7 @@ ORDER BY nummer DESC;
 -- name: GetOrCreateBundesland :one
 INSERT INTO bundesland (name)
 VALUES (?)
-ON CONFLICT (name) DO NOTHING
+ON CONFLICT (name) DO UPDATE SET name = name
 RETURNING *;
 
 -- name: ListBundeslaender :many

@@ -106,7 +106,7 @@ func (q *Queries) GetFundstelleUrheberByPlenarprotokoll(ctx context.Context, ple
 const getOrCreateBundesland = `-- name: GetOrCreateBundesland :one
 INSERT INTO bundesland (name)
 VALUES (?)
-ON CONFLICT (name) DO NOTHING
+ON CONFLICT (name) DO UPDATE SET name = name
 RETURNING name, created_at
 `
 
