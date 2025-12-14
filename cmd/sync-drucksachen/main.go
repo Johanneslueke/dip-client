@@ -23,6 +23,7 @@ func main() {
 		apiKey  = flag.String("key", "", "API key")
 		dbPath  = flag.String("db", "dip.db", "SQLite database path")
 		limit   = flag.Int("limit", 0, "Maximum number of drucksachen to fetch (0 = all)")
+		end  = flag.String("end", "", "Fetch drucksachen up to this date (YYYY-MM-DD)")
 	)
 	flag.Parse()
 
@@ -32,6 +33,18 @@ func main() {
 
 	if *apiKey == "" {
 		log.Fatal("API key required (use -key flag or DIP_API_KEY environment variable)")
+	}
+
+	var datumEnd *openapi_types.Date
+	if(*end != "") {
+		val, err := time.Parse("2006-01-02", *end)
+
+		if err != nil {
+			log.Fatalf("Invalid end date: %v", err)
+		}
+		datumEnd = &openapi_types.Date{Time: val}
+	}else {
+		datumEnd = nil
 	}
 
 	dipClient, err := dipclient.New(dipclient.Config{
@@ -72,6 +85,7 @@ func main() {
 
 		params := &client.GetDrucksacheListParams{
 			Cursor: cursor,
+			FDatumEnd: datumEnd,
 		}
 
 		resp, err := dipClient.GetDrucksacheList(ctx, params)
