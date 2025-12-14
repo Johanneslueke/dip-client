@@ -19,11 +19,13 @@ import (
 
 func main() {
 	var (
-		baseURL = flag.String("url", "https://search.dip.bundestag.de/api/v1", "API base URL")
-		apiKey  = flag.String("key", "", "API key")
-		dbPath  = flag.String("db", "dip.db", "SQLite database path")
-		limit   = flag.Int("limit", 0, "Maximum number of drucksachen to fetch (0 = all)")
-		end  = flag.String("end", "", "Fetch drucksachen up to this date (YYYY-MM-DD)")
+		baseURL       = flag.String("url", "https://search.dip.bundestag.de/api/v1", "API base URL")
+		apiKey        = flag.String("key", "", "API key")
+		dbPath        = flag.String("db", "dip.db", "SQLite database path")
+		limit         = flag.Int("limit", 0, "Maximum number of drucksachen to fetch (0 = all)")
+		end           = flag.String("end", "", "Fetch drucksachen up to this date (YYYY-MM-DD)")
+		checkpointDir = flag.String("checkpoint-dir", ".checkpoints", "Directory to store checkpoint files")
+		resume        = flag.Bool("resume", false, "Resume from last checkpoint")
 	)
 	flag.Parse()
 
@@ -36,15 +38,25 @@ func main() {
 	}
 
 	var datumEnd *openapi_types.Date
-	if(*end != "") {
+	
+	// Check for checkpoint if resume flag is set
+	if *resume {
+		checkpoint, err := utility.LoadCheckpoint(*checkpointDir, "drucksachen")
+		if err != nil {
+			log.Printf("Warning: Failed to load checkpoint: %v", err)
+		} else if checkpoint != nil {
+			datumEnd = &openapi_types.Date{Time: checkpoint.LastSyncDate}
+			log.Printf("Resuming from checkpoint: %s", checkpoint.LastSyncDate.Format("2006-01-02"))
+		}
+	}
+	
+	// Command line --end flag overrides checkpoint
+	if *end != "" {
 		val, err := time.Parse("2006-01-02", *end)
-
 		if err != nil {
 			log.Fatalf("Invalid end date: %v", err)
 		}
 		datumEnd = &openapi_types.Date{Time: val}
-	}else {
-		datumEnd = nil
 	}
 
 	dipClient, err := dipclient.New(dipclient.Config{
@@ -75,16 +87,42 @@ func main() {
 	progress := utility.NewProgressTracker(*limit)
 
 	var cursor *string
+	var lastProcessedDate time.Time
+	interrupted := false
+
+	// Setup signal handler to save checkpoint on interrupt
+	signalHandler := utility.NewSignalHandler(
+		func() {
+			// First signal: save checkpoint
+			interrupted = true
+			if !lastProcessedDate.IsZero() {
+				if err := utility.SaveCheckpoint(*checkpointDir, "drucksachen", lastProcessedDate); err != nil {
+					log.Printf("Error saving checkpoint: %v", err)
+				} else {
+					log.Printf("Checkpoint saved: %s", lastProcessedDate.Format("2006-01-02"))
+				}
+			}
+		},
+		nil, // No second signal callback
+	)
+	defer signalHandler.Stop()
 
 	log.Printf("Starting to fetch drucksachen from API...")
 
 	for {
+		// Check if interrupted
+		if signalHandler.IsInterrupted() || interrupted {
+			fmt.Println() // New line after progress updates
+			log.Printf("Interrupted after processing %d drucksachen", progress.Total)
+			return
+		}
+
 		if err := limiter.Wait(ctx); err != nil {
 			log.Fatalf("Rate limiter error: %v", err)
 		}
 
 		params := &client.GetDrucksacheListParams{
-			Cursor: cursor,
+			Cursor:    cursor,
 			FDatumEnd: datumEnd,
 		}
 
@@ -103,6 +141,12 @@ func main() {
 			if err := storeDrucksache(ctx, queries, drucksache); err != nil {
 				log.Printf("Warning: Failed to store drucksache %s: %v", drucksache.Id, err)
 			}
+			
+			// Track the last processed date for checkpoint
+			if drucksache.Datum.Time.After(lastProcessedDate) {
+				lastProcessedDate = drucksache.Datum.Time
+			}
+			
 			progress.Increment()
 
 			if *limit > 0 && progress.Total >= *limit {
@@ -123,6 +167,13 @@ done:
 	elapsed, rate := progress.GetStats()
 	log.Printf("Successfully stored %d drucksachen in database %s (%.1f/sec, took %s)",
 		progress.Total, *dbPath, rate, elapsed.Round(time.Second))
+	
+	// Delete checkpoint on successful completion
+	if !interrupted && *resume {
+		if err := utility.DeleteCheckpoint(*checkpointDir, "drucksachen"); err != nil {
+			log.Printf("Warning: Failed to delete checkpoint: %v", err)
+		}
+	}
 }
 
 func storeDrucksache(ctx context.Context, q *db.Queries, drucksache client.Drucksache) error {

@@ -237,3 +237,181 @@ fi
 3. **Cache results** when possible - the API data doesn't change frequently
 4. **Use wahlperiode filter** - it significantly reduces the result set
 5. **Combine filters** to narrow down results before post-processing with jq
+
+## Sync Commands
+
+The project includes several sync commands to populate a local SQLite database with DIP data.
+
+### Available Sync Commands
+
+```bash
+# Sync all entities
+./bin/sync-all
+
+# Individual sync commands
+./bin/sync-personen
+./bin/sync-vorgaenge
+./bin/sync-vorgangspositionen
+./bin/sync-aktivitaeten
+./bin/sync-drucksachen
+./bin/sync-drucksache-texte
+./bin/sync-plenarprotokolle
+./bin/sync-plenarprotokoll-texte
+```
+
+### Basic Usage
+
+```bash
+# Sync with default settings (fetches all data)
+./bin/sync-drucksachen
+
+# Limit number of records
+./bin/sync-drucksachen --limit 100
+
+# Specify database path
+./bin/sync-drucksachen --db my-database.db
+
+# Set end date for sync (only fetch data up to this date)
+./bin/sync-drucksachen --end 2024-01-01
+```
+
+### Checkpoint System (Resumable Syncs)
+
+All sync commands support checkpoints for graceful interruption and resumption:
+
+```bash
+# Start a sync - press Ctrl+C to interrupt
+./bin/sync-drucksachen
+# (Press Ctrl+C after some records are processed)
+# Checkpoint saved at 2024-03-15
+
+# Resume from last checkpoint
+./bin/sync-drucksachen --resume
+# Resuming from checkpoint: 2024-03-15
+
+# Checkpoint directory can be customized
+./bin/sync-drucksachen --checkpoint-dir .my-checkpoints --resume
+```
+
+**How it works:**
+- First Ctrl+C: Saves checkpoint with the date of the last processed record and exits gracefully
+- Second Ctrl+C: Force quits immediately
+- `--resume` flag: Loads checkpoint and continues from that date using `FDatumEnd` filter
+- `--end` flag: Overrides checkpoint if both are specified
+- Successful completion: Automatically deletes checkpoint file
+
+**Checkpoint files:**
+- Location: `.checkpoints/` directory (default)
+- Format: `{sync-name}.checkpoint.json`
+- Example: `.checkpoints/drucksachen.checkpoint.json`
+
+### Sync-All Orchestration
+
+The `sync-all` command runs all sync commands in sequence:
+
+```bash
+# Sync all entities
+./bin/sync-all
+
+# Skip specific syncs
+./bin/sync-all --skip "personen,vorgaenge"
+
+# Only run specific syncs
+./bin/sync-all --only "drucksachen,aktivitaeten"
+
+# Apply limit to all syncs
+./bin/sync-all --limit 100
+
+# Continue on errors (don't stop if one sync fails)
+./bin/sync-all --continue
+
+# Dry run (show what would be executed)
+./bin/sync-all --dry-run
+
+# Combine flags
+./bin/sync-all --skip "personen" --limit 50 --continue
+```
+
+**Signal handling in sync-all:**
+- First Ctrl+C: Gracefully stops current sync and exits
+- Second Ctrl+C: Force kills current process and exits immediately
+
+**Sync order:**
+1. personen
+2. vorgaenge
+3. vorgangspositionen
+4. aktivitaeten
+5. drucksachen
+6. drucksache-texte
+7. plenarprotokolle
+8. plenarprotokoll-texte
+
+### Query Commands
+
+```bash
+# List all known laws (Gesetze) from database
+./bin/list-gesetze
+
+# Filter by Wahlperiode
+./bin/list-gesetze --wahlperiode 20
+
+# Filter by status
+./bin/list-gesetze --beratungsstand "Verkündet"
+
+# Filter by subject area
+./bin/list-gesetze --sachgebiet "Umwelt"
+
+# Only show verkündet (enacted) laws
+./bin/list-gesetze --verkuendet
+
+# Only show laws in kraft (in force)
+./bin/list-gesetze --inkraft
+
+# JSON output
+./bin/list-gesetze --json
+
+# Pagination
+./bin/list-gesetze --limit 10 --offset 0
+
+# Combine filters
+./bin/list-gesetze --wahlperiode 20 --verkuendet --sachgebiet "Verkehr"
+```
+
+### Example Workflows
+
+#### Full Database Setup
+
+```bash
+# 1. Sync all data (can be interrupted and resumed)
+./bin/sync-all
+
+# 2. Query the data
+./bin/list-gesetze --wahlperiode 20 --json
+```
+
+#### Incremental Updates
+
+```bash
+# Initial full sync
+./bin/sync-drucksachen
+
+# Later, sync only recent changes (last 30 days)
+./bin/sync-drucksachen --end $(date -d '30 days ago' +%Y-%m-%d)
+```
+
+#### Partial Sync with Recovery
+
+```bash
+# Start syncing drucksachen
+./bin/sync-drucksachen
+# (Internet drops, press Ctrl+C)
+# Checkpoint saved at 2024-03-15
+
+# Resume when connection is back
+./bin/sync-drucksachen --resume
+# Resuming from checkpoint: 2024-03-15
+# (Completes successfully)
+
+# Next run will start fresh (checkpoint auto-deleted on success)
+./bin/sync-drucksachen
+```

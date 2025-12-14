@@ -34,10 +34,13 @@ type PersonWithArrayWahlperiode struct {
 
 func main() {
 	var (
-		baseURL = flag.String("url", "https://search.dip.bundestag.de/api/v1", "API base URL")
-		apiKey  = flag.String("key", "", "API key")
-		dbPath  = flag.String("db", "dip.db", "SQLite database path")
-		limit   = flag.Int("limit", 0, "Maximum number of persons to fetch (0 = all)")
+		baseURL       = flag.String("url", "https://search.dip.bundestag.de/api/v1", "API base URL")
+		apiKey        = flag.String("key", "", "API key")
+		dbPath        = flag.String("db", "dip.db", "SQLite database path")
+		limit         = flag.Int("limit", 0, "Maximum number of persons to fetch (0 = all)")
+		checkpointDir = flag.String("checkpoint-dir", ".checkpoints", "Directory to store checkpoints")
+		resume        = flag.Bool("resume", false, "Resume from last checkpoint")
+		end           = flag.String("end", "", "End date for sync (YYYY-MM-DD)")
 	)
 	flag.Parse()
 
@@ -77,6 +80,47 @@ func main() {
 	limiter := utility.NewRateLimiter(23, time.Minute)
 	progress := utility.NewProgressTracker(*limit)
 
+	// Checkpoint and signal handling
+	var datumEnd *types.Date
+	var lastProcessedDate time.Time
+	interrupted := false
+
+	if *resume {
+		checkpoint, err := utility.LoadCheckpoint(*checkpointDir, "personen")
+		if err != nil {
+			log.Printf("Warning: Failed to load checkpoint: %v", err)
+		} else if checkpoint != nil {
+			lastProcessedDate = checkpoint.LastSyncDate
+			date := types.Date{Time: lastProcessedDate}
+			datumEnd = &date
+			log.Printf("Resuming from checkpoint: %s", lastProcessedDate.Format("2006-01-02"))
+		}
+	}
+
+	if *end != "" {
+		endTime, err := time.Parse("2006-01-02", *end)
+		if err != nil {
+			log.Fatalf("Invalid end date format: %v", err)
+		}
+		date := types.Date{Time: endTime}
+		datumEnd = &date
+	}
+
+	signalHandler := utility.NewSignalHandler(
+		func() {
+			interrupted = true
+			if !lastProcessedDate.IsZero() {
+				if err := utility.SaveCheckpoint(*checkpointDir, "personen", lastProcessedDate); err != nil {
+					log.Printf("Error saving checkpoint: %v", err)
+				} else {
+					log.Printf("Checkpoint saved at %s", lastProcessedDate.Format("2006-01-02"))
+				}
+			}
+		},
+		nil,
+	)
+	defer signalHandler.Stop()
+
 	// Fetch and store persons
 	var cursor *string
 	totalFetched := 0
@@ -85,13 +129,21 @@ func main() {
 	log.Printf("Starting to fetch persons from API...")
 
 	for {
+		// Check if interrupted
+		if signalHandler.IsInterrupted() || interrupted {
+			fmt.Println() // New line after progress updates
+			log.Printf("Interrupted after processing %d persons", progress.Total)
+			return
+		}
+
 		// Wait for rate limiter before making request
 		if err := limiter.Wait(ctx); err != nil {
 			log.Fatalf("Rate limiter error: %v", err)
 		}
 
 		params := &dipclient.GetPersonListParams{
-			Cursor: cursor,
+			Cursor:    cursor,
+			FDatumEnd: datumEnd,
 		}
 
 		// Use custom response handler to deal with wahlperiode array
@@ -122,6 +174,12 @@ func main() {
 				log.Printf("Warning: Failed to store person %s: %v", person.Id, err)
 				continue
 			}
+
+			// Track the last processed date for checkpoint
+			if person.Aktualisiert.After(lastProcessedDate) {
+				lastProcessedDate = person.Aktualisiert
+			}
+
 			personCount++
 			progress.Increment()
 
@@ -144,8 +202,15 @@ func main() {
 done:
 	fmt.Println() // New line after progress updates
 	elapsed, rate := progress.GetStats()
-	log.Printf("Successfully stored %d vorgänge in database %s (%.1f/sec, took %s)",
+	log.Printf("Successfully stored %d persons in database %s (%.1f/sec, took %s)",
 		progress.Total, *dbPath, rate, elapsed.Round(time.Second))
+
+	// Delete checkpoint on successful completion
+	if !interrupted && *resume {
+		if err := utility.DeleteCheckpoint(*checkpointDir, "personen"); err != nil {
+			log.Printf("Warning: Failed to delete checkpoint: %v", err)
+		}
+	}
 }
 
  
