@@ -25,6 +25,7 @@ func main() {
 		limit         = flag.Int("limit", 0, "Maximum number of drucksachen to fetch (0 = all)")
 		end           = flag.String("end", "", "Fetch drucksachen up to this date (YYYY-MM-DD)")
 		checkpointDir = flag.String("checkpoint-dir", ".checkpoints", "Directory to store checkpoint files")
+		failedDir     = flag.String("failed-dir", ".failed", "Directory to store failed record IDs")
 		resume        = flag.Bool("resume", false, "Resume from last checkpoint")
 	)
 	flag.Parse()
@@ -83,8 +84,9 @@ func main() {
 
 	queries := db.New(sqlDB)
 	ctx := context.Background()
-	limiter := utility.NewRateLimiter(23, time.Minute)
+	limiter := utility.NewRateLimiter(120, time.Minute)
 	progress := utility.NewProgressTracker(*limit)
+	failedTracker := utility.NewFailedRecordsTracker(*failedDir, "drucksachen")
 
 	var cursor *string
 	var lastProcessedDate time.Time
@@ -135,12 +137,11 @@ func main() {
 			break
 		}
 
-		progress.PrintProgress(progress.Total+len(resp.Documents), int(resp.NumFound))
+		progress.Total += len(resp.Documents)
+		progress.PrintProgress(progress.Total, int(resp.NumFound))
 
 		for _, drucksache := range resp.Documents {
-			if err := storeDrucksache(ctx, queries, drucksache); err != nil {
-				log.Printf("Warning: Failed to store drucksache %s: %v", drucksache.Id, err)
-			}
+			storeDrucksache(ctx, queries, drucksache, failedTracker)
 			
 			// Track the last processed date for checkpoint
 			if drucksache.Datum.Time.After(lastProcessedDate) {
@@ -168,6 +169,15 @@ done:
 	log.Printf("Successfully stored %d drucksachen in database %s (%.1f/sec, took %s)",
 		progress.Total, *dbPath, rate, elapsed.Round(time.Second))
 	
+	// Save failed records if any
+	if failedTracker.Count() > 0 {
+		if err := failedTracker.Save(); err != nil {
+			log.Printf("Warning: Failed to save failed records: %v", err)
+		} else {
+			log.Printf("⚠️  %d records failed due to DB locks, saved to %s/drucksachen.failed.json", failedTracker.Count(), *failedDir)
+		}
+	}
+	
 	// Delete checkpoint on successful completion
 	if !interrupted && *resume {
 		if err := utility.DeleteCheckpoint(*checkpointDir, "drucksachen"); err != nil {
@@ -176,10 +186,12 @@ done:
 	}
 }
 
-func storeDrucksache(ctx context.Context, q *db.Queries, drucksache client.Drucksache) error {
+func storeDrucksache(ctx context.Context, q *db.Queries, drucksache client.Drucksache, failedTracker *utility.FailedRecordsTracker) {
 	existing, err := q.GetDrucksache(ctx, drucksache.Id)
 	if err != nil && err != sql.ErrNoRows {
-		return fmt.Errorf("failed to check if drucksache exists: %w", err)
+		failedTracker.RecordIfDBLocked(drucksache.Id, "GetDrucksache", err)
+		log.Printf("Warning: Failed to check if drucksache %s exists: %v", drucksache.Id, err)
+		return
 	}
 
 	ptrToNullString := func(s *string) sql.NullString {
@@ -264,11 +276,15 @@ func storeDrucksache(ctx context.Context, q *db.Queries, drucksache client.Druck
 			PdfHash:             params.PdfHash,
 		}
 		if _, err := q.UpdateDrucksache(ctx, updateParams); err != nil {
-			return fmt.Errorf("failed to update drucksache: %w", err)
+			failedTracker.RecordIfDBLocked(drucksache.Id, "UpdateDrucksache", err)
+			log.Printf("Warning: Failed to update drucksache %s: %v", drucksache.Id, err)
+			return
 		}
 	} else {
 		if _, err := q.CreateDrucksache(ctx, params); err != nil {
-			return fmt.Errorf("failed to create drucksache: %w", err)
+			failedTracker.RecordIfDBLocked(drucksache.Id, "CreateDrucksache", err)
+			log.Printf("Warning: Failed to create drucksache %s: %v", drucksache.Id, err)
+			return
 		}
 	}
 
@@ -282,6 +298,7 @@ func storeDrucksache(ctx context.Context, q *db.Queries, drucksache client.Druck
 				Title:        autor.Title,
 				DisplayOrder: int64(idx),
 			}); err != nil {
+				failedTracker.RecordIfDBLocked(drucksache.Id, "CreateDrucksacheAutorAnzeige", err)
 				log.Printf("Warning: Failed to store autor anzeige for drucksache %s: %v", drucksache.Id, err)
 			}
 		}
@@ -292,6 +309,7 @@ func storeDrucksache(ctx context.Context, q *db.Queries, drucksache client.Druck
 		for _, ressort := range *drucksache.Ressort {
 			ressortRecord, err := q.GetOrCreateRessort(ctx, ressort.Titel)
 			if err != nil {
+				failedTracker.RecordIfDBLocked(drucksache.Id, "GetOrCreateRessort", err)
 				log.Printf("Warning: Failed to get or create ressort for drucksache %s: %v", drucksache.Id, err)
 				continue
 			}
@@ -306,6 +324,7 @@ func storeDrucksache(ctx context.Context, q *db.Queries, drucksache client.Druck
 				RessortID:     ressortRecord.ID,
 				Federfuehrend: federfuehrend,
 			}); err != nil {
+				failedTracker.RecordIfDBLocked(drucksache.Id, "CreateDrucksacheRessort", err)
 				log.Printf("Warning: Failed to store ressort for drucksache %s: %v", drucksache.Id, err)
 			}
 		}
@@ -319,6 +338,7 @@ func storeDrucksache(ctx context.Context, q *db.Queries, drucksache client.Druck
 				Titel:       urheber.Titel,
 			})
 			if err != nil {
+				failedTracker.RecordIfDBLocked(drucksache.Id, "GetOrCreateUrheber", err)
 				log.Printf("Warning: Failed to get or create urheber for drucksache %s: %v", drucksache.Id, err)
 				continue
 			}
@@ -339,6 +359,7 @@ func storeDrucksache(ctx context.Context, q *db.Queries, drucksache client.Druck
 				Rolle:        rolle,
 				Einbringer:   einbringer,
 			}); err != nil {
+				failedTracker.RecordIfDBLocked(drucksache.Id, "CreateDrucksacheUrheber", err)
 				log.Printf("Warning: Failed to store urheber for drucksache %s: %v", drucksache.Id, err)
 			}
 		}
@@ -354,10 +375,9 @@ func storeDrucksache(ctx context.Context, q *db.Queries, drucksache client.Druck
 				Vorgangstyp:  bezug.Vorgangstyp,
 				DisplayOrder: int64(idx),
 			}); err != nil {
+				failedTracker.RecordIfDBLocked(drucksache.Id, "CreateDrucksacheVorgangsbezug", err)
 				log.Printf("Warning: Failed to store vorgangsbezug for drucksache %s: %v", drucksache.Id, err)
 			}
 		}
 	}
-
-	return nil
 }

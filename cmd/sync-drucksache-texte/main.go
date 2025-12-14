@@ -3,180 +3,71 @@ package main
 import (
 	"context"
 	"database/sql"
-	"flag"
-	"fmt"
 	"log"
-	"os"
-	"time"
 
 	db "github.com/Johanneslueke/dip-client/internal/database/gen/sqlite"
 	client "github.com/Johanneslueke/dip-client/internal/gen"
 	"github.com/Johanneslueke/dip-client/internal/utility"
-	dipclient "github.com/Johanneslueke/dip-client/pkg/dip-client"
-	openapi_types "github.com/oapi-codegen/runtime/types"
 	_ "modernc.org/sqlite"
 )
 
 func main() {
-	var (
-		baseURL       = flag.String("url", "https://search.dip.bundestag.de/api/v1", "API base URL")
-		apiKey        = flag.String("key", "", "API key")
-		dbPath        = flag.String("db", "dip.db", "SQLite database path")
-		limit         = flag.Int("limit", 0, "Maximum number of drucksache-texte to fetch (0 = all)")
-		checkpointDir = flag.String("checkpoint-dir", ".checkpoints", "Directory to store checkpoints")
-		resume        = flag.Bool("resume", false, "Resume from last checkpoint")
-		end           = flag.String("end", "", "End date for sync (YYYY-MM-DD)")
-	)
-	flag.Parse()
+	// Parse configuration
+	config := utility.ParseSyncFlags("drucksache-texte")
 
-	if *apiKey == "" {
-		*apiKey = os.Getenv("DIP_API_KEY")
-	}
-
-	if *apiKey == "" {
-		log.Fatal("API key required (use -key flag or DIP_API_KEY environment variable)")
-	}
-
-	dipClient, err := dipclient.New(dipclient.Config{
-		BaseURL: *baseURL,
-		APIKey:  *apiKey,
-	})
+	// Create sync context (handles all setup)
+	syncCtx, err := utility.NewSyncContext(config, 240)
 	if err != nil {
-		log.Fatalf("Failed to create API client: %v", err)
+		log.Fatal(err)
 	}
+	defer syncCtx.Close()
 
-	sqlDB, err := sql.Open("sqlite", *dbPath)
-	if err != nil {
-		log.Fatalf("Failed to open database: %v", err)
-	}
-	defer sqlDB.Close()
-
-	sqlDB.SetMaxOpenConns(24)
-	sqlDB.SetMaxIdleConns(24)
-	sqlDB.SetConnMaxLifetime(time.Hour)
-
-	if err := utility.RunMigrations(sqlDB); err != nil {
-		log.Fatalf("Failed to run migrations: %v", err)
-	}
-
-	queries := db.New(sqlDB)
-	ctx := context.Background()
-	limiter := utility.NewRateLimiter(23, time.Minute)
-	progress := utility.NewProgressTracker(*limit)
-
-	// Checkpoint and signal handling
-	var datumEnd *openapi_types.Date
-	var lastProcessedDate time.Time
-	interrupted := false
-
-	if *resume {
-		checkpoint, err := utility.LoadCheckpoint(*checkpointDir, "drucksache-texte")
-		if err != nil {
-			log.Printf("Warning: Failed to load checkpoint: %v", err)
-		} else if checkpoint != nil {
-			lastProcessedDate = checkpoint.LastSyncDate
-			date := openapi_types.Date{Time: lastProcessedDate}
-			datumEnd = &date
-			log.Printf("Resuming from checkpoint: %s", lastProcessedDate.Format("2006-01-02"))
-		}
-	}
-
-	if *end != "" {
-		endTime, err := time.Parse("2006-01-02", *end)
-		if err != nil {
-			log.Fatalf("Invalid end date format: %v", err)
-		}
-		date := openapi_types.Date{Time: endTime}
-		datumEnd = &date
-	}
-
-	signalHandler := utility.NewSignalHandler(
-		func() {
-			interrupted = true
-			if !lastProcessedDate.IsZero() {
-				if err := utility.SaveCheckpoint(*checkpointDir, "drucksache-texte", lastProcessedDate); err != nil {
-					log.Printf("Error saving checkpoint: %v", err)
-				} else {
-					log.Printf("Checkpoint saved at %s", lastProcessedDate.Format("2006-01-02"))
-				}
+	// Run sync loop
+	err = syncCtx.SyncLoop(
+		// Fetch batch function
+		func(ctx context.Context, cursor *string) (*utility.BatchResponse, error) {
+			params := &client.GetDrucksacheTextListParams{
+				Cursor: cursor,
 			}
+
+			resp, err := syncCtx.Client.GetDrucksacheTextList(ctx, params)
+			if err != nil {
+				return nil, err
+			}
+
+			return &utility.BatchResponse{
+				Documents:    resp.Documents,
+				Cursor:       resp.Cursor,
+				NumFound:     int(resp.NumFound),
+				DocumentsLen: len(resp.Documents),
+			}, nil
 		},
+		// Store item function
+		storeDrucksacheText,
+		// Update checkpoint date function (not used for text resources, pass nil)
 		nil,
+		// Extract items function
+		func(docs interface{}) []interface{} {
+			texts := docs.([]client.DrucksacheText)
+			items := make([]interface{}, len(texts))
+			for i, t := range texts {
+				items[i] = t
+			}
+			return items
+		},
 	)
-	defer signalHandler.Stop()
 
-	var cursor *string
-
-	log.Printf("Starting to fetch drucksache-texte from API...")
-
-	for {
-		// Check if interrupted
-		if signalHandler.IsInterrupted() || interrupted {
-			fmt.Println() // New line after progress updates
-			log.Printf("Interrupted after processing %d drucksache-texte", progress.Total)
-			return
-		}
-
-		if err := limiter.Wait(ctx); err != nil {
-			log.Fatalf("Rate limiter error: %v", err)
-		}
-
-		params := &client.GetDrucksacheTextListParams{
-			Cursor:    cursor,
-			FDatumEnd: datumEnd,
-		}
-
-		resp, err := dipClient.GetDrucksacheTextList(ctx, params)
-		if err != nil {
-			log.Fatalf("Failed to fetch drucksache-texte: %v", err)
-		}
-
-		if len(resp.Documents) == 0 {
-			break
-		}
-
-		progress.PrintProgress(progress.Total+len(resp.Documents), int(resp.NumFound))
-
-		for _, drucksacheText := range resp.Documents {
-			if err := storeDrucksacheText(ctx, queries, drucksacheText); err != nil {
-				log.Printf("Warning: Failed to store drucksache text %s: %v", drucksacheText.Id, err)
-			}
-
-			// Track the last processed date for checkpoint
-			if drucksacheText.Aktualisiert.After(lastProcessedDate) {
-				lastProcessedDate = drucksacheText.Aktualisiert
-			}
-
-			progress.Increment()
-
-			if *limit > 0 && progress.Total >= *limit {
-				fmt.Println() // New line before final message
-				log.Printf("Reached limit of %d drucksache-texte", *limit)
-				goto done
-			}
-		}
-
-		if resp.Cursor == "" {
-			break
-		}
-		cursor = &resp.Cursor
+	if err != nil {
+		log.Fatal(err)
 	}
 
-done:
-	fmt.Println() // New line after progress updates
-	elapsed, rate := progress.GetStats()
-	log.Printf("Successfully stored %d drucksache-texte in database %s (%.1f/sec, took %s)",
-		progress.Total, *dbPath, rate, elapsed.Round(time.Second))
-
-	// Delete checkpoint on successful completion
-	if !interrupted && *resume {
-		if err := utility.DeleteCheckpoint(*checkpointDir, "drucksache-texte"); err != nil {
-			log.Printf("Warning: Failed to delete checkpoint: %v", err)
-		}
-	}
+	// Finalize (handles all cleanup and logging)
+	syncCtx.Finalize()
 }
 
-func storeDrucksacheText(ctx context.Context, q *db.Queries, drucksacheText client.DrucksacheText) error {
+func storeDrucksacheText(ctx context.Context, q *db.Queries, item interface{}, failedTracker *utility.FailedRecordsTracker) {
+	drucksacheText := item.(client.DrucksacheText)
+
 	ptrToNullString := func(s *string) sql.NullString {
 		if s == nil {
 			return sql.NullString{Valid: false}
@@ -189,8 +80,7 @@ func storeDrucksacheText(ctx context.Context, q *db.Queries, drucksacheText clie
 		ID:   drucksacheText.Id,
 		Text: ptrToNullString(drucksacheText.Text),
 	}); err != nil {
-		return fmt.Errorf("failed to store drucksache text: %w", err)
+		failedTracker.RecordIfDBLocked(drucksacheText.Id, "CreateDrucksacheText", err)
+		log.Printf("Warning: Failed to store drucksache text %s: %v", drucksacheText.Id, err)
 	}
-
-	return nil
 }

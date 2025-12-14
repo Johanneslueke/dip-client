@@ -24,6 +24,7 @@ func main() {
 		dbPath        = flag.String("db", "dip.db", "SQLite database path")
 		limit         = flag.Int("limit", 0, "Maximum number of plenarprotokolle to fetch (0 = all)")
 		checkpointDir = flag.String("checkpoint-dir", ".checkpoints", "Directory to store checkpoints")
+		failedDir     = flag.String("failed-dir", ".failed", "Directory to store failed record IDs")
 		resume        = flag.Bool("resume", false, "Resume from last checkpoint")
 		end           = flag.String("end", "", "End date for sync (YYYY-MM-DD)")
 	)
@@ -61,8 +62,9 @@ func main() {
 
 	queries := db.New(sqlDB)
 	ctx := context.Background()
-	limiter := utility.NewRateLimiter(23, time.Minute)
+	limiter := utility.NewRateLimiter(120, time.Minute)
 	progress := utility.NewProgressTracker(*limit)
+	failedTracker := utility.NewFailedRecordsTracker(*failedDir, "plenarprotokolle")
 
 	// Checkpoint and signal handling
 	var datumEnd *openapi_types.Date
@@ -135,12 +137,11 @@ func main() {
 			break
 		}
 
-		progress.PrintProgress(progress.Total+len(resp.Documents), int(resp.NumFound))
+		progress.Total += len(resp.Documents)
+		progress.PrintProgress(progress.Total, int(resp.NumFound))
 
 		for _, plenarprotokoll := range resp.Documents {
-			if err := storePlenarprotokoll(ctx, queries, plenarprotokoll); err != nil {
-				log.Printf("Warning: Failed to store plenarprotokoll %s: %v", plenarprotokoll.Id, err)
-			}
+			storePlenarprotokoll(ctx, queries, plenarprotokoll, failedTracker)
 
 			// Track the last processed date for checkpoint
 			if plenarprotokoll.Aktualisiert.After(lastProcessedDate) {
@@ -168,6 +169,15 @@ done:
 	log.Printf("Successfully stored %d plenarprotokolle in database %s (%.1f/sec, took %s)",
 		progress.Total, *dbPath, rate, elapsed.Round(time.Second))
 
+	// Save failed records if any
+	if failedTracker.Count() > 0 {
+		if err := failedTracker.Save(); err != nil {
+			log.Printf("Warning: Failed to save failed records: %v", err)
+		} else {
+			log.Printf("⚠️  %d records failed due to DB locks, saved to %s/plenarprotokolle.failed.json", failedTracker.Count(), *failedDir)
+		}
+	}
+
 	// Delete checkpoint on successful completion
 	if !interrupted && *resume {
 		if err := utility.DeleteCheckpoint(*checkpointDir, "plenarprotokolle"); err != nil {
@@ -176,10 +186,12 @@ done:
 	}
 }
 
-func storePlenarprotokoll(ctx context.Context, q *db.Queries, plenarprotokoll client.Plenarprotokoll) error {
+func storePlenarprotokoll(ctx context.Context, q *db.Queries, plenarprotokoll client.Plenarprotokoll, failedTracker *utility.FailedRecordsTracker) {
 	existing, err := q.GetPlenarprotokoll(ctx, plenarprotokoll.Id)
 	if err != nil && err != sql.ErrNoRows {
-		return fmt.Errorf("failed to check if plenarprotokoll exists: %w", err)
+		failedTracker.RecordIfDBLocked(plenarprotokoll.Id, "GetPlenarprotokoll", err)
+		log.Printf("Warning: Failed to check if plenarprotokoll %s exists: %v", plenarprotokoll.Id, err)
+		return
 	}
 
 	ptrToNullString := func(s *string) sql.NullString {
@@ -250,11 +262,15 @@ func storePlenarprotokoll(ctx context.Context, q *db.Queries, plenarprotokoll cl
 			VorgangsbezugAnzahl: params.VorgangsbezugAnzahl,
 		}
 		if _, err := q.UpdatePlenarprotokoll(ctx, updateParams); err != nil {
-			return fmt.Errorf("failed to update plenarprotokoll: %w", err)
+			failedTracker.RecordIfDBLocked(plenarprotokoll.Id, "UpdatePlenarprotokoll", err)
+			log.Printf("Warning: Failed to update plenarprotokoll %s: %v", plenarprotokoll.Id, err)
+			return
 		}
 	} else {
 		if _, err := q.CreatePlenarprotokoll(ctx, params); err != nil {
-			return fmt.Errorf("failed to create plenarprotokoll: %w", err)
+			failedTracker.RecordIfDBLocked(plenarprotokoll.Id, "CreatePlenarprotokoll", err)
+			log.Printf("Warning: Failed to create plenarprotokoll %s: %v", plenarprotokoll.Id, err)
+			return
 		}
 	}
 
@@ -268,10 +284,9 @@ func storePlenarprotokoll(ctx context.Context, q *db.Queries, plenarprotokoll cl
 				Vorgangstyp:       bezug.Vorgangstyp,
 				DisplayOrder:      int64(idx),
 			}); err != nil {
+				failedTracker.RecordIfDBLocked(plenarprotokoll.Id, "CreatePlenarprotokollVorgangsbezug", err)
 				log.Printf("Warning: Failed to store vorgangsbezug for plenarprotokoll %s: %v", plenarprotokoll.Id, err)
 			}
 		}
 	}
-
-	return nil
 }

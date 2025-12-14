@@ -348,6 +348,17 @@ func (q *Queries) DeleteVorgang(ctx context.Context, id string) error {
 	return err
 }
 
+const getLatestVorgangDatum = `-- name: GetLatestVorgangDatum :one
+SELECT MIN(datum) as datum FROM vorgang
+`
+
+func (q *Queries) GetLatestVorgangDatum(ctx context.Context) (interface{}, error) {
+	row := q.db.QueryRowContext(ctx, getLatestVorgangDatum)
+	var datum interface{}
+	err := row.Scan(&datum)
+	return datum, err
+}
+
 const getVorgang = `-- name: GetVorgang :one
 SELECT id, titel, vorgangstyp, typ, abstract, aktualisiert, archiv, beratungsstand, datum, gesta, kom, mitteilung, ratsdok, sek, wahlperiode, created_at, updated_at
 FROM vorgang

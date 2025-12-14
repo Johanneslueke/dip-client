@@ -59,6 +59,24 @@ type AktivitaetDeskriptor struct {
 	CreatedAt    string `json:"created_at"`
 }
 
+type AktivitaetOverview struct {
+	ID                       string         `json:"id"`
+	Titel                    string         `json:"titel"`
+	Aktivitaetsart           string         `json:"aktivitaetsart"`
+	Dokumentart              string         `json:"dokumentart"`
+	Datum                    string         `json:"datum"`
+	Aktualisiert             string         `json:"aktualisiert"`
+	Abstract                 sql.NullString `json:"abstract"`
+	Wahlperiode              int64          `json:"wahlperiode"`
+	FundstelleDokumentnummer string         `json:"fundstelle_dokumentnummer"`
+	FundstelleDatum          string         `json:"fundstelle_datum"`
+	FundstellePdfUrl         sql.NullString `json:"fundstelle_pdf_url"`
+	Deskriptoren             string         `json:"deskriptoren"`
+	Vorgaenge                string         `json:"vorgaenge"`
+	CreatedAt                string         `json:"created_at"`
+	UpdatedAt                string         `json:"updated_at"`
+}
+
 type AktivitaetVorgangsbezug struct {
 	AktivitaetID     string `json:"aktivitaet_id"`
 	VorgangID        string `json:"vorgang_id"`
@@ -132,6 +150,26 @@ type DrucksacheAutorAnzeige struct {
 	CreatedAt    string `json:"created_at"`
 }
 
+type DrucksacheOverview struct {
+	ID               string         `json:"id"`
+	Titel            string         `json:"titel"`
+	Dokumentnummer   string         `json:"dokumentnummer"`
+	Dokumentart      string         `json:"dokumentart"`
+	Drucksachetyp    string         `json:"drucksachetyp"`
+	Herausgeber      string         `json:"herausgeber"`
+	Datum            string         `json:"datum"`
+	Aktualisiert     string         `json:"aktualisiert"`
+	Wahlperiode      sql.NullInt64  `json:"wahlperiode"`
+	FundstellePdfUrl sql.NullString `json:"fundstelle_pdf_url"`
+	Volltext         sql.NullString `json:"volltext"`
+	Autoren          string         `json:"autoren"`
+	Ressorts         string         `json:"ressorts"`
+	Urheber          string         `json:"urheber"`
+	Vorgaenge        string         `json:"vorgaenge"`
+	CreatedAt        string         `json:"created_at"`
+	UpdatedAt        string         `json:"updated_at"`
+}
+
 type DrucksacheRessort struct {
 	DrucksacheID  string `json:"drucksache_id"`
 	RessortID     int64  `json:"ressort_id"`
@@ -166,6 +204,43 @@ type FundstelleUrheber struct {
 	PlenarprotokollID sql.NullString `json:"plenarprotokoll_id"`
 	Urheber           string         `json:"urheber"`
 	CreatedAt         string         `json:"created_at"`
+}
+
+type GesetzTimeline struct {
+	EntityType       string         `json:"entity_type"`
+	EntityID         string         `json:"entity_id"`
+	EventDate        sql.NullString `json:"event_date"`
+	EventTitle       string         `json:"event_title"`
+	EventDescription string         `json:"event_description"`
+	Status           sql.NullString `json:"status"`
+	PdfUrl           interface{}    `json:"pdf_url"`
+	VorgangID        string         `json:"vorgang_id"`
+}
+
+type GesetzTrace struct {
+	VorgangID                 string         `json:"vorgang_id"`
+	GesetzTitel               string         `json:"gesetz_titel"`
+	Vorgangstyp               string         `json:"vorgangstyp"`
+	Beratungsstand            sql.NullString `json:"beratungsstand"`
+	VorgangDatum              sql.NullString `json:"vorgang_datum"`
+	VorgangAktualisiert       string         `json:"vorgang_aktualisiert"`
+	Wahlperiode               int64          `json:"wahlperiode"`
+	Gesta                     sql.NullString `json:"gesta"`
+	Sachgebiete               string         `json:"sachgebiete"`
+	Initiativen               string         `json:"initiativen"`
+	Deskriptoren              string         `json:"deskriptoren"`
+	Ausfertigungsdatum        sql.NullString `json:"ausfertigungsdatum"`
+	Verkuendungsdatum         sql.NullString `json:"verkuendungsdatum"`
+	VerkuendungFundstelle     sql.NullString `json:"verkuendung_fundstelle"`
+	VerkuendungPdfUrl         sql.NullString `json:"verkuendung_pdf_url"`
+	InkrafttretenDatum        sql.NullString `json:"inkrafttreten_datum"`
+	InkrafttretenErlaeuterung sql.NullString `json:"inkrafttreten_erlaeuterung"`
+	AnzahlVorgangspositionen  int64          `json:"anzahl_vorgangspositionen"`
+	AnzahlAktivitaeten        int64          `json:"anzahl_aktivitaeten"`
+	AnzahlDrucksachen         int64          `json:"anzahl_drucksachen"`
+	AnzahlPlenarprotokolle    int64          `json:"anzahl_plenarprotokolle"`
+	CreatedAt                 string         `json:"created_at"`
+	UpdatedAt                 string         `json:"updated_at"`
 }
 
 type Inkrafttreten struct {
@@ -245,6 +320,23 @@ type Plenarprotokoll struct {
 	FundstelleTopZusatz       sql.NullString `json:"fundstelle_top_zusatz"`
 	CreatedAt                 string         `json:"created_at"`
 	UpdatedAt                 string         `json:"updated_at"`
+}
+
+type PlenarprotokollOverview struct {
+	ID                string         `json:"id"`
+	Titel             string         `json:"titel"`
+	Dokumentnummer    string         `json:"dokumentnummer"`
+	Dokumentart       string         `json:"dokumentart"`
+	Herausgeber       string         `json:"herausgeber"`
+	Datum             string         `json:"datum"`
+	Aktualisiert      string         `json:"aktualisiert"`
+	Sitzungsbemerkung sql.NullString `json:"sitzungsbemerkung"`
+	Wahlperiode       sql.NullInt64  `json:"wahlperiode"`
+	FundstellePdfUrl  sql.NullString `json:"fundstelle_pdf_url"`
+	Volltext          sql.NullString `json:"volltext"`
+	Vorgaenge         string         `json:"vorgaenge"`
+	CreatedAt         string         `json:"created_at"`
+	UpdatedAt         string         `json:"updated_at"`
 }
 
 type PlenarprotokollText struct {
@@ -409,6 +501,26 @@ type VorgangspositionMitberaten struct {
 	MitberatenTitel            string `json:"mitberaten_titel"`
 	MitberatenVorgangsposition string `json:"mitberaten_vorgangsposition"`
 	MitberatenVorgangstyp      string `json:"mitberaten_vorgangstyp"`
+}
+
+type VorgangspositionOverview struct {
+	ID                       string         `json:"id"`
+	VorgangID                string         `json:"vorgang_id"`
+	Titel                    string         `json:"titel"`
+	Vorgangsposition         string         `json:"vorgangsposition"`
+	Vorgangstyp              string         `json:"vorgangstyp"`
+	Dokumentart              string         `json:"dokumentart"`
+	Datum                    string         `json:"datum"`
+	Aktualisiert             string         `json:"aktualisiert"`
+	Abstract                 sql.NullString `json:"abstract"`
+	Zuordnung                string         `json:"zuordnung"`
+	FundstelleDokumentnummer string         `json:"fundstelle_dokumentnummer"`
+	FundstelleDatum          string         `json:"fundstelle_datum"`
+	FundstellePdfUrl         sql.NullString `json:"fundstelle_pdf_url"`
+	Ressorts                 string         `json:"ressorts"`
+	Urheber                  string         `json:"urheber"`
+	CreatedAt                string         `json:"created_at"`
+	UpdatedAt                string         `json:"updated_at"`
 }
 
 type VorgangspositionRessort struct {

@@ -327,6 +327,7 @@ To regenerate the client from the OpenAPI spec:
 
 ```bash
 go generate ./...
+go run ./cmd/sync-all --skip "personen, plenarprotokoll-texte,drucksache-texte" --key OSOegLs.PR2lwJ1dwCeje9vTj7FPOt3hvpYKtwKkhw  --db dip.clean.db
 ```
 
 The generation uses `oapi-codegen` with configuration files:

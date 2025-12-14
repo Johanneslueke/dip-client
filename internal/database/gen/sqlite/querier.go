@@ -67,6 +67,7 @@ type Querier interface {
 	GetDrucksacheWithRelations(ctx context.Context, id string) ([]GetDrucksacheWithRelationsRow, error)
 	GetFundstelleUrheberByDrucksache(ctx context.Context, drucksacheID sql.NullString) ([]FundstelleUrheber, error)
 	GetFundstelleUrheberByPlenarprotokoll(ctx context.Context, plenarprotokollID sql.NullString) ([]FundstelleUrheber, error)
+	GetLatestVorgangDatum(ctx context.Context) (interface{}, error)
 	GetOrCreateBundesland(ctx context.Context, name string) (Bundesland, error)
 	GetOrCreateRessort(ctx context.Context, titel string) (Ressort, error)
 	GetOrCreateUrheber(ctx context.Context, arg GetOrCreateUrheberParams) (Urheber, error)

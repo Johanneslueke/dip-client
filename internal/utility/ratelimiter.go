@@ -2,54 +2,74 @@ package utility
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 )
 
-type rateLimiter struct {
-	tokens     int
-	maxTokens  int
-	interval   time.Duration
-	lastRefill time.Time
-	mu         sync.Mutex
+type RateLimiter struct {
+	tokens          float64
+	maxTokens       float64
+	refillRate      float64       // tokens per nanosecond
+	refillInterval  time.Duration // time to add one token
+	lastRefill      time.Time
+	mu              sync.Mutex
 }
+ 
 
-func NewRateLimiter(maxRequests int, interval time.Duration) *rateLimiter {
-	return &rateLimiter{
-		tokens:     maxRequests,
-		maxTokens:  maxRequests,
-		interval:   interval,
-		lastRefill: time.Now(),
+func NewRateLimiter(maxRequests int, interval time.Duration) *RateLimiter {
+	refillInterval := interval / time.Duration(maxRequests)
+	return &RateLimiter{
+		tokens:         0.0, // Start empty - no initial burst
+		maxTokens:      float64(maxRequests),
+		refillRate:     1.0 / float64(refillInterval),
+		refillInterval: refillInterval,
+		lastRefill:     time.Now(),
 	}
 }
 
-func (rl *rateLimiter) Wait(ctx context.Context) error {
+func (rl *RateLimiter) Wait(ctx context.Context) error {
 	rl.mu.Lock()
-	defer rl.mu.Unlock()
 
 	for {
 		now := time.Now()
 		elapsed := now.Sub(rl.lastRefill)
 
-		if elapsed >= rl.interval {
-			rl.tokens = rl.maxTokens
+		// Gradually refill tokens based on elapsed time
+		if elapsed > 0 {
+			tokensToAdd := float64(elapsed) * rl.refillRate
+			rl.tokens += tokensToAdd
+			if rl.tokens > rl.maxTokens {
+				rl.tokens = rl.maxTokens
+			}
 			rl.lastRefill = now
 		}
 
-		if rl.tokens > 0 {
-			rl.tokens--
+		if rl.tokens >= 1.0 {
+			rl.tokens -= 1.0
+			rl.mu.Unlock()
+			fmt.Printf("Token after Unlock %v \n", rl.tokens)
 			return nil
 		}
 
-		waitTime := rl.interval - elapsed
+		// Calculate how long until we have at least one token
+		tokensNeeded := 1.0 - rl.tokens
+		waitTime := time.Duration(tokensNeeded / rl.refillRate)
+		
 		rl.mu.Unlock()
-
+		fmt.Printf("Token before wait %v , need to wait %v \n", rl.tokens, waitTime)
+		
+		timer := time.NewTimer(waitTime)
 		select {
 		case <-ctx.Done():
-			rl.mu.Lock()
+			if !timer.Stop() {
+				<-timer.C
+			}
 			return ctx.Err()
-		case <-time.After(waitTime):
-			rl.mu.Lock()
+		case <-timer.C:
 		}
+		
+		rl.mu.Lock()
 	}
+
 }

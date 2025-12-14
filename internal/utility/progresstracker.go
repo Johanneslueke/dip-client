@@ -47,7 +47,7 @@ func (p *ProgressTracker) PrintProgress(current, totalAvailable int) {
 		}
 	}
 
-	fmt.Printf("\rFetched %d vorgänge (%.1f/sec, %.1f%% of %d total, %s%s)    ",
+	fmt.Printf("\rFetched %d items (%.1f/sec, %.1f%% of %d total, %s%s)    ",
 		current,
 		rate,
 		float64(current)/float64(totalAvailable)*100,

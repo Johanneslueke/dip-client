@@ -24,6 +24,7 @@ func main() {
 		dbPath        = flag.String("db", "dip.db", "SQLite database path")
 		limit         = flag.Int("limit", 0, "Maximum number of aktivitäten to fetch (0 = all)")
 		checkpointDir = flag.String("checkpoint-dir", ".checkpoints", "Directory to store checkpoints")
+		failedDir     = flag.String("failed-dir", ".failed", "Directory to store failed record IDs")
 		resume        = flag.Bool("resume", false, "Resume from last checkpoint")
 		end           = flag.String("end", "", "End date for sync (YYYY-MM-DD)")
 	)
@@ -63,6 +64,7 @@ func main() {
 	ctx := context.Background()
 	limiter := utility.NewRateLimiter(23, time.Minute)
 	progress := utility.NewProgressTracker(*limit)
+	failedTracker := utility.NewFailedRecordsTracker(*failedDir, "aktivitaeten")
 
 	// Checkpoint and signal handling
 	var datumEnd *openapi_types.Date
@@ -138,9 +140,7 @@ func main() {
 		progress.PrintProgress(progress.Total+len(resp.Documents), int(resp.NumFound))
 
 		for _, aktivitaet := range resp.Documents {
-			if err := storeAktivitaet(ctx, queries, aktivitaet); err != nil {
-				log.Printf("Warning: Failed to store aktivitaet %s: %v", aktivitaet.Id, err)
-			}
+			storeAktivitaet(ctx, queries, aktivitaet, failedTracker)
 
 			// Track the last processed date for checkpoint
 			if aktivitaet.Aktualisiert.After(lastProcessedDate) {
@@ -168,6 +168,15 @@ done:
 	log.Printf("Successfully stored %d aktivitäten in database %s (%.1f/sec, took %s)",
 		progress.Total, *dbPath, rate, elapsed.Round(time.Second))
 
+	// Save failed records if any
+	if failedTracker.Count() > 0 {
+		if err := failedTracker.Save(); err != nil {
+			log.Printf("Warning: Failed to save failed records: %v", err)
+		} else {
+			log.Printf("⚠️  %d records failed due to DB locks, saved to %s/aktivitaeten.failed.json", failedTracker.Count(), *failedDir)
+		}
+	}
+
 	// Delete checkpoint on successful completion
 	if !interrupted && *resume {
 		if err := utility.DeleteCheckpoint(*checkpointDir, "aktivitaeten"); err != nil {
@@ -176,10 +185,12 @@ done:
 	}
 }
 
-func storeAktivitaet(ctx context.Context, q *db.Queries, aktivitaet client.Aktivitaet) error {
+func storeAktivitaet(ctx context.Context, q *db.Queries, aktivitaet client.Aktivitaet, failedTracker *utility.FailedRecordsTracker) {
 	existing, err := q.GetAktivitaet(ctx, aktivitaet.Id)
 	if err != nil && err != sql.ErrNoRows {
-		return fmt.Errorf("failed to check if aktivitaet exists: %w", err)
+		failedTracker.RecordIfDBLocked(aktivitaet.Id, "GetAktivitaet", err)
+		log.Printf("Warning: Failed to check if aktivitaet %s exists: %v", aktivitaet.Id, err)
+		return
 	}
 
 	ptrToNullString := func(s *string) sql.NullString {
@@ -259,11 +270,15 @@ func storeAktivitaet(ctx context.Context, q *db.Queries, aktivitaet client.Aktiv
 			VorgangsbezugAnzahl: params.VorgangsbezugAnzahl,
 		}
 		if _, err := q.UpdateAktivitaet(ctx, updateParams); err != nil {
-			return fmt.Errorf("failed to update aktivitaet: %w", err)
+			failedTracker.RecordIfDBLocked(aktivitaet.Id, "UpdateAktivitaet", err)
+			log.Printf("Warning: Failed to update aktivitaet %s: %v", aktivitaet.Id, err)
+			return
 		}
 	} else {
 		if _, err := q.CreateAktivitaet(ctx, params); err != nil {
-			return fmt.Errorf("failed to create aktivitaet: %w", err)
+			failedTracker.RecordIfDBLocked(aktivitaet.Id, "CreateAktivitaet", err)
+			log.Printf("Warning: Failed to create aktivitaet %s: %v", aktivitaet.Id, err)
+			return
 		}
 	}
 
@@ -275,6 +290,7 @@ func storeAktivitaet(ctx context.Context, q *db.Queries, aktivitaet client.Aktiv
 				Name:         desk.Name,
 				Typ:          string(desk.Typ),
 			}); err != nil {
+				failedTracker.RecordIfDBLocked(aktivitaet.Id, "CreateAktivitaetDeskriptor", err)
 				log.Printf("Warning: Failed to store deskriptor for aktivitaet %s: %v", aktivitaet.Id, err)
 			}
 		}
@@ -291,10 +307,9 @@ func storeAktivitaet(ctx context.Context, q *db.Queries, aktivitaet client.Aktiv
 				Vorgangstyp:      bezug.Vorgangstyp,
 				DisplayOrder:     int64(idx),
 			}); err != nil {
+				failedTracker.RecordIfDBLocked(aktivitaet.Id, "CreateAktivitaetVorgangsbezug", err)
 				log.Printf("Warning: Failed to store vorgangsbezug for aktivitaet %s: %v", aktivitaet.Id, err)
 			}
 		}
 	}
-
-	return nil
 }

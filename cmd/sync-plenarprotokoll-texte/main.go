@@ -24,6 +24,7 @@ func main() {
 		dbPath        = flag.String("db", "dip.db", "SQLite database path")
 		limit         = flag.Int("limit", 0, "Maximum number of plenarprotokoll-texte to fetch (0 = all)")
 		checkpointDir = flag.String("checkpoint-dir", ".checkpoints", "Directory to store checkpoints")
+		failedDir     = flag.String("failed-dir", ".failed", "Directory to store failed record IDs")
 		resume        = flag.Bool("resume", false, "Resume from last checkpoint")
 		end           = flag.String("end", "", "End date for sync (YYYY-MM-DD)")
 	)
@@ -63,6 +64,7 @@ func main() {
 	ctx := context.Background()
 	limiter := utility.NewRateLimiter(23, time.Minute)
 	progress := utility.NewProgressTracker(*limit)
+	failedTracker := utility.NewFailedRecordsTracker(*failedDir, "plenarprotokoll-texte")
 
 	// Checkpoint and signal handling
 	var datumEnd *openapi_types.Date
@@ -138,9 +140,7 @@ func main() {
 		progress.PrintProgress(progress.Total+len(resp.Documents), int(resp.NumFound))
 
 		for _, plenarprotokollText := range resp.Documents {
-			if err := storePlenarprotokollText(ctx, queries, plenarprotokollText); err != nil {
-				log.Printf("Warning: Failed to store plenarprotokoll text %s: %v", plenarprotokollText.Id, err)
-			}
+			storePlenarprotokollText(ctx, queries, plenarprotokollText, failedTracker)
 
 			// Track the last processed date for checkpoint
 			if plenarprotokollText.Aktualisiert.After(lastProcessedDate) {
@@ -168,6 +168,15 @@ done:
 	log.Printf("Successfully stored %d plenarprotokoll-texte in database %s (%.1f/sec, took %s)",
 		progress.Total, *dbPath, rate, elapsed.Round(time.Second))
 
+	// Save failed records if any
+	if failedTracker.Count() > 0 {
+		if err := failedTracker.Save(); err != nil {
+			log.Printf("Warning: Failed to save failed records: %v", err)
+		} else {
+			log.Printf("⚠️  %d records failed due to DB locks, saved to %s/plenarprotokoll-texte.failed.json", failedTracker.Count(), *failedDir)
+		}
+	}
+
 	// Delete checkpoint on successful completion
 	if !interrupted && *resume {
 		if err := utility.DeleteCheckpoint(*checkpointDir, "plenarprotokoll-texte"); err != nil {
@@ -176,7 +185,7 @@ done:
 	}
 }
 
-func storePlenarprotokollText(ctx context.Context, q *db.Queries, plenarprotokollText client.PlenarprotokollText) error {
+func storePlenarprotokollText(ctx context.Context, q *db.Queries, plenarprotokollText client.PlenarprotokollText, failedTracker *utility.FailedRecordsTracker) {
 	ptrToNullString := func(s *string) sql.NullString {
 		if s == nil {
 			return sql.NullString{Valid: false}
@@ -188,8 +197,7 @@ func storePlenarprotokollText(ctx context.Context, q *db.Queries, plenarprotokol
 		ID:   plenarprotokollText.Id,
 		Text: ptrToNullString(plenarprotokollText.Text),
 	}); err != nil {
-		return fmt.Errorf("failed to store plenarprotokoll text: %w", err)
+		failedTracker.RecordIfDBLocked(plenarprotokollText.Id, "CreatePlenarprotokollText", err)
+		log.Printf("Warning: Failed to store plenarprotokoll text %s: %v", plenarprotokollText.Id, err)
 	}
-
-	return nil
 }

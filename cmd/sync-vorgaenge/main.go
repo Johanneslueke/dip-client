@@ -28,6 +28,7 @@ func main() {
 		dbPath        = flag.String("db", "dip.db", "SQLite database path")
 		limit         = flag.Int("limit", 0, "Maximum number of vorgänge to fetch (0 = all)")
 		checkpointDir = flag.String("checkpoint-dir", ".checkpoints", "Directory to store checkpoints")
+		failedDir     = flag.String("failed-dir", ".failed", "Directory to store failed record IDs")
 		resume        = flag.Bool("resume", false, "Resume from last checkpoint")
 		end           = flag.String("end", "", "End date for sync (YYYY-MM-DD)")
 	)
@@ -65,8 +66,9 @@ func main() {
 
 	queries := db.New(sqlDB)
 	ctx := context.Background()
-	limiter := utility.NewRateLimiter(23, time.Minute)
+	limiter := utility.NewRateLimiter(240, time.Minute) // 120 req/min = ~1 request every 0.5 seconds
 	progress := utility.NewProgressTracker(*limit)
+	failedTracker := utility.NewFailedRecordsTracker(*failedDir, "vorgaenge")
 
 	// Checkpoint and signal handling
 	var datumEnd *openapi_types.Date
@@ -139,16 +141,24 @@ func main() {
 			break
 		}
 
-		progress.PrintProgress(progress.Total+len(resp.Documents), int(resp.NumFound))
+		progress.Total += len(resp.Documents)
+		progress.PrintProgress(progress.Total, int(resp.NumFound))
 
 		for _, vorgang := range resp.Documents {
-			if err := storeVorgang(ctx, queries, vorgang); err != nil {
-				log.Printf("Warning: Failed to store vorgang %s: %v", vorgang.Id, err)
-			}
+			storeVorgang(ctx, queries, vorgang, failedTracker)
 
 			// Track the last processed date for checkpoint
-			if vorgang.Aktualisiert.After(lastProcessedDate) {
-				lastProcessedDate = vorgang.Aktualisiert
+			if vorgang.Datum.Time.After(lastProcessedDate) {
+				datum, err :=  queries.GetLatestVorgangDatum(ctx)
+				if err != nil {
+					log.Printf("Warning: Failed to get latest vorgang datum: %v", err)
+					lastProcessedDate = vorgang.Datum.Time
+				} else if t, ok := datum.(string); ok {
+					lastProcessedDate, _ = time.Parse("2006-01-02", t)
+				} else {
+					log.Printf("Warning: Failed to cast datum to time.Time %v, using vorgang.Datum.Time", datum)
+					lastProcessedDate = vorgang.Datum.Time
+				}
 			}
 
 			progress.Increment()
@@ -172,6 +182,15 @@ done:
 	log.Printf("Successfully stored %d vorgänge in database %s (%.1f/sec, took %s)",
 		progress.Total, *dbPath, rate, elapsed.Round(time.Second))
 
+	// Save failed records if any
+	if failedTracker.Count() > 0 {
+		if err := failedTracker.Save(); err != nil {
+			log.Printf("Warning: Failed to save failed records: %v", err)
+		} else {
+			log.Printf("⚠️  %d records failed due to DB locks, saved to %s/.failed/vorgaenge.failed.json", failedTracker.Count(), *failedDir)
+		}
+	}
+
 	// Delete checkpoint on successful completion
 	if !interrupted && *resume {
 		if err := utility.DeleteCheckpoint(*checkpointDir, "vorgaenge"); err != nil {
@@ -183,10 +202,12 @@ done:
 
 
 
-func storeVorgang(ctx context.Context, q *db.Queries, vorgang client.Vorgang) error {
+func storeVorgang(ctx context.Context, q *db.Queries, vorgang client.Vorgang, failedTracker *utility.FailedRecordsTracker) {
 	existing, err := q.GetVorgang(ctx, vorgang.Id)
 	if err != nil && err != sql.ErrNoRows {
-		return fmt.Errorf("failed to check if vorgang exists: %w", err)
+		failedTracker.RecordIfDBLocked(vorgang.Id, "GetVorgang", err)
+		log.Printf("Warning: Failed to check if vorgang %s exists: %v", vorgang.Id, err)
+		return
 	}
 
 	ptrToNullString := func(s *string) sql.NullString {
@@ -232,11 +253,15 @@ func storeVorgang(ctx context.Context, q *db.Queries, vorgang client.Vorgang) er
 			Mitteilung:     params.Mitteilung,
 		}
 		if _, err := q.UpdateVorgang(ctx, updateParams); err != nil {
-			return fmt.Errorf("failed to update vorgang: %w", err)
+			failedTracker.RecordIfDBLocked(vorgang.Id, "UpdateVorgang", err)
+			log.Printf("Warning: Failed to update vorgang %s: %v", vorgang.Id, err)
+			return
 		}
 	} else {
 		if _, err := q.CreateVorgang(ctx, params); err != nil {
-			return fmt.Errorf("failed to create vorgang: %w", err)
+			failedTracker.RecordIfDBLocked(vorgang.Id, "CreateVorgang", err)
+			log.Printf("Warning: Failed to create vorgang %s: %v", vorgang.Id, err)
+			return
 		}
 	}
 
@@ -246,6 +271,7 @@ func storeVorgang(ctx context.Context, q *db.Queries, vorgang client.Vorgang) er
 				VorgangID:  vorgang.Id,
 				Initiative: init,
 			}); err != nil {
+				failedTracker.RecordIfDBLocked(vorgang.Id, "CreateVorgangInitiative", err)
 				log.Printf("Warning: Failed to store initiative for vorgang %s: %v", vorgang.Id, err)
 			}
 		}
@@ -257,6 +283,7 @@ func storeVorgang(ctx context.Context, q *db.Queries, vorgang client.Vorgang) er
 				VorgangID:  vorgang.Id,
 				Sachgebiet: sach,
 			}); err != nil {
+				failedTracker.RecordIfDBLocked(vorgang.Id, "CreateVorgangSachgebiet", err)
 				log.Printf("Warning: Failed to store sachgebiet for vorgang %s: %v", vorgang.Id, err)
 			}
 		}
@@ -274,10 +301,9 @@ func storeVorgang(ctx context.Context, q *db.Queries, vorgang client.Vorgang) er
 				Typ:        string(desk.Typ),
 				Fundstelle: fundstelleInt,
 			}); err != nil {
+				failedTracker.RecordIfDBLocked(vorgang.Id, "CreateVorgangDeskriptor", err)
 				log.Printf("Warning: Failed to store deskriptor for vorgang %s: %v", vorgang.Id, err)
 			}
 		}
 	}
-
-	return nil
 }

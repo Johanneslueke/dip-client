@@ -4,10 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"flag"
-	"fmt"
 	"log"
-	"os"
 	"time"
 
 	db "github.com/Johanneslueke/dip-client/internal/database/gen/sqlite"
@@ -33,72 +30,22 @@ type PersonWithArrayWahlperiode struct {
 }
 
 func main() {
-	var (
-		baseURL       = flag.String("url", "https://search.dip.bundestag.de/api/v1", "API base URL")
-		apiKey        = flag.String("key", "", "API key")
-		dbPath        = flag.String("db", "dip.db", "SQLite database path")
-		limit         = flag.Int("limit", 0, "Maximum number of persons to fetch (0 = all)")
-		checkpointDir = flag.String("checkpoint-dir", ".checkpoints", "Directory to store checkpoints")
-		resume        = flag.Bool("resume", false, "Resume from last checkpoint")
-		end           = flag.String("end", "", "End date for sync (YYYY-MM-DD)")
-	)
-	flag.Parse()
+	// Parse configuration
+	config := utility.ParseSyncFlags("personen")
 
-	if *apiKey == "" {
-		*apiKey = os.Getenv("DIP_API_KEY")
-	}
-
-	if *apiKey == "" {
-		log.Fatal("API key required (use -key flag or DIP_API_KEY environment variable)")
-	}
-
-	// Initialize DIP API client
-	client, err := dipclient.New(dipclient.Config{
-		BaseURL: *baseURL,
-		APIKey:  *apiKey,
-	})
+	// Create sync context (handles all setup)
+	syncCtx, err := utility.NewSyncContext(config, 240)
 	if err != nil {
-		log.Fatalf("Failed to create API client: %v", err)
+		log.Fatal(err)
 	}
+	defer syncCtx.Close()
 
-	// Open SQLite database
-	sqlDB, err := sql.Open("sqlite", *dbPath)
-	if err != nil {
-		log.Fatalf("Failed to open database: %v", err)
-	}
-	defer sqlDB.Close()
+	// Load checkpoint if resuming
+	datumEnd, _ := syncCtx.CheckpointMgr.LoadIfResume()
 
-	// Run migrations
-	if err := utility.RunMigrations(sqlDB); err != nil {
-		log.Fatalf("Failed to run migrations: %v", err)
-	}
-
-	queries := db.New(sqlDB)
-	ctx := context.Background()
-
-	// Initialize rate limiter: 23 requests per minute (leaving 1 request buffer)
-	limiter := utility.NewRateLimiter(23, time.Minute)
-	progress := utility.NewProgressTracker(*limit)
-
-	// Checkpoint and signal handling
-	var datumEnd *types.Date
-	var lastProcessedDate time.Time
-	interrupted := false
-
-	if *resume {
-		checkpoint, err := utility.LoadCheckpoint(*checkpointDir, "personen")
-		if err != nil {
-			log.Printf("Warning: Failed to load checkpoint: %v", err)
-		} else if checkpoint != nil {
-			lastProcessedDate = checkpoint.LastSyncDate
-			date := types.Date{Time: lastProcessedDate}
-			datumEnd = &date
-			log.Printf("Resuming from checkpoint: %s", lastProcessedDate.Format("2006-01-02"))
-		}
-	}
-
-	if *end != "" {
-		endTime, err := time.Parse("2006-01-02", *end)
+	// Parse end date if provided
+	if config.End != "" {
+		endTime, err := time.Parse("2006-01-02", config.End)
 		if err != nil {
 			log.Fatalf("Invalid end date format: %v", err)
 		}
@@ -106,121 +53,78 @@ func main() {
 		datumEnd = &date
 	}
 
-	signalHandler := utility.NewSignalHandler(
-		func() {
-			interrupted = true
-			if !lastProcessedDate.IsZero() {
-				if err := utility.SaveCheckpoint(*checkpointDir, "personen", lastProcessedDate); err != nil {
-					log.Printf("Error saving checkpoint: %v", err)
-				} else {
-					log.Printf("Checkpoint saved at %s", lastProcessedDate.Format("2006-01-02"))
-				}
+	// Run sync loop
+	err = syncCtx.SyncLoop(
+		// Fetch batch function
+		func(ctx context.Context, cursor *string) (*utility.BatchResponse, error) {
+			params := &dipclient.GetPersonListParams{
+				Cursor:    cursor,
+				FDatumEnd: datumEnd,
 			}
+
+			// Use custom response handler to deal with wahlperiode array
+			respBody, err := syncCtx.Client.GetPersonListRaw(ctx, params)
+			if err != nil {
+				return nil, err
+			}
+
+			var result struct {
+				Cursor    string                       `json:"cursor"`
+				Documents []PersonWithArrayWahlperiode `json:"documents"`
+				NumFound  int32                        `json:"numFound"`
+			}
+
+			if err := json.Unmarshal(respBody, &result); err != nil {
+				return nil, err
+			}
+
+			return &utility.BatchResponse{
+				Documents:    result.Documents,
+				Cursor:       result.Cursor,
+				NumFound:     int(result.NumFound),
+				DocumentsLen: len(result.Documents),
+			}, nil
 		},
-		nil,
+		// Store item function
+		storePerson,
+		// Update checkpoint date function
+		updatePersonDate,
+		// Extract items function
+		func(docs interface{}) []interface{} {
+			persons := docs.([]PersonWithArrayWahlperiode)
+			items := make([]interface{}, len(persons))
+			for i, p := range persons {
+				items[i] = p
+			}
+			return items
+		},
 	)
-	defer signalHandler.Stop()
 
-	// Fetch and store persons
-	var cursor *string
-	totalFetched := 0
-	personCount := 0
-
-	log.Printf("Starting to fetch persons from API...")
-
-	for {
-		// Check if interrupted
-		if signalHandler.IsInterrupted() || interrupted {
-			fmt.Println() // New line after progress updates
-			log.Printf("Interrupted after processing %d persons", progress.Total)
-			return
-		}
-
-		// Wait for rate limiter before making request
-		if err := limiter.Wait(ctx); err != nil {
-			log.Fatalf("Rate limiter error: %v", err)
-		}
-
-		params := &dipclient.GetPersonListParams{
-			Cursor:    cursor,
-			FDatumEnd: datumEnd,
-		}
-
-		// Use custom response handler to deal with wahlperiode array
-		respBody, err := client.GetPersonListRaw(ctx, params)
-		if err != nil {
-			log.Fatalf("Failed to fetch persons: %v", err)
-		}
-
-		var result struct {
-			Cursor    string                       `json:"cursor"`
-			Documents []PersonWithArrayWahlperiode `json:"documents"`
-			NumFound  int32                        `json:"numFound"`
-		}
-
-		if err := json.Unmarshal(respBody, &result); err != nil {
-			log.Fatalf("Failed to parse response: %v", err)
-		}
-
-		log.Printf("Fetched %d persons (total so far: %d, API reports %d total)",
-			len(result.Documents), totalFetched+len(result.Documents), result.NumFound)
-
-		progress.PrintProgress(totalFetched+len(result.Documents), int(result.NumFound))
-
-
-		// Store each person
-		for _, person := range result.Documents {
-			if err := storePerson(ctx, queries, person); err != nil {
-				log.Printf("Warning: Failed to store person %s: %v", person.Id, err)
-				continue
-			}
-
-			// Track the last processed date for checkpoint
-			if person.Aktualisiert.After(lastProcessedDate) {
-				lastProcessedDate = person.Aktualisiert
-			}
-
-			personCount++
-			progress.Increment()
-
-			if *limit > 0 && progress.Total >= *limit {
-				log.Printf("Reached limit of %d persons", *limit)
-				goto done
-			}
-		}
-
-		totalFetched += len(result.Documents)
-
-		// Check if we should continue
-		if len(result.Documents) == 0 || result.Cursor == "" || (*limit > 0 && totalFetched >= *limit) {
-			break
-		}
-
-		cursor = &result.Cursor
+	if err != nil {
+		log.Fatal(err)
 	}
 
-done:
-	fmt.Println() // New line after progress updates
-	elapsed, rate := progress.GetStats()
-	log.Printf("Successfully stored %d persons in database %s (%.1f/sec, took %s)",
-		progress.Total, *dbPath, rate, elapsed.Round(time.Second))
+	// Finalize (handles all cleanup and logging)
+	syncCtx.Finalize()
+}
 
-	// Delete checkpoint on successful completion
-	if !interrupted && *resume {
-		if err := utility.DeleteCheckpoint(*checkpointDir, "personen"); err != nil {
-			log.Printf("Warning: Failed to delete checkpoint: %v", err)
-		}
+func updatePersonDate(ctx context.Context, q *db.Queries, item interface{}, checkpointMgr *utility.CheckpointManager) {
+	person := item.(PersonWithArrayWahlperiode)
+	if !person.Aktualisiert.IsZero() {
+		checkpointMgr.UpdateDate(person.Aktualisiert)
 	}
 }
 
- 
+func storePerson(ctx context.Context, q *db.Queries, item interface{}, failedTracker *utility.FailedRecordsTracker) {
+	person := item.(PersonWithArrayWahlperiode)
 
-func storePerson(ctx context.Context, q *db.Queries, person PersonWithArrayWahlperiode) error {
 	// Ensure wahlperioden exist (use array if available)
 	if person.WahlperiodeArray != nil {
 		for _, wp := range *person.WahlperiodeArray {
 			if _, err := q.GetOrCreateWahlperiode(ctx, int64(wp)); err != nil {
-				return fmt.Errorf("failed to create wahlperiode: %w", err)
+				failedTracker.RecordIfDBLocked(person.Id, "GetOrCreateWahlperiode", err)
+				log.Printf("Warning: Failed to create wahlperiode for person %s: %v", person.Id, err)
+				return
 			}
 		}
 	}
@@ -233,7 +137,6 @@ func storePerson(ctx context.Context, q *db.Queries, person PersonWithArrayWahlp
 		basisdatum.Valid = true
 		basisdatum.String = person.Basisdatum.String()
 	}
-
 	if person.Datum != nil {
 		datum.Valid = true
 		datum.String = person.Datum.String()
@@ -258,6 +161,7 @@ func storePerson(ctx context.Context, q *db.Queries, person PersonWithArrayWahlp
 		Datum:        datum,
 	})
 	if err != nil {
+		failedTracker.RecordIfDBLocked(person.Id, "CreatePerson", err)
 		// Person might already exist - try to update
 		_, err = q.UpdatePerson(ctx, db.UpdatePersonParams{
 			ID:           person.Id,
@@ -270,7 +174,9 @@ func storePerson(ctx context.Context, q *db.Queries, person PersonWithArrayWahlp
 			Datum:        datum,
 		})
 		if err != nil {
-			return fmt.Errorf("failed to create or update person: %w", err)
+			failedTracker.RecordIfDBLocked(person.Id, "UpdatePerson", err)
+			log.Printf("Warning: Failed to update person %s: %v", person.Id, err)
+			return
 		}
 	}
 
@@ -289,20 +195,18 @@ func storePerson(ctx context.Context, q *db.Queries, person PersonWithArrayWahlp
 	// Store person roles if available
 	if person.PersonRoles != nil {
 		for _, role := range *person.PersonRoles {
-			if err := storePersonRole(ctx, q, person.Id, role); err != nil {
-				log.Printf("Warning: Failed to store role for person %s: %v", person.Id, err)
-			}
+			storePersonRole(ctx, q, person.Id, role, failedTracker)
 		}
 	}
-
-	return nil
 }
 
-func storePersonRole(ctx context.Context, q *db.Queries, personID string, role dipclient.PersonRole) error {
+func storePersonRole(ctx context.Context, q *db.Queries, personID string, role dipclient.PersonRole, failedTracker *utility.FailedRecordsTracker) {
 	// Ensure bundesland exists if specified
 	if role.Bundesland != nil {
 		if _, err := q.GetOrCreateBundesland(ctx, string(*role.Bundesland)); err != nil {
-			return fmt.Errorf("failed to create bundesland: %w", err)
+			failedTracker.RecordIfDBLocked(personID, "GetOrCreateBundesland", err)
+			log.Printf("Warning: Failed to create bundesland for person %s: %v", personID, err)
+			return
 		}
 	}
 
@@ -346,26 +250,21 @@ func storePersonRole(ctx context.Context, q *db.Queries, personID string, role d
 		Wahlkreiszusatz: wahlkreiszusatz,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create person role: %w", err)
+		failedTracker.RecordIfDBLocked(personID, "CreatePersonRole", err)
+		log.Printf("Warning: Failed to create person role for %s: %v", personID, err)
+		return
 	}
 
-	// Store wahlperiode associations
+	// Store role wahlperioden if available
 	if role.WahlperiodeNummer != nil {
 		for _, wp := range *role.WahlperiodeNummer {
-			// Ensure wahlperiode exists
-			if _, err := q.GetOrCreateWahlperiode(ctx, int64(wp)); err != nil {
-				log.Printf("Warning: Failed to create wahlperiode %d: %v", wp, err)
-				continue
-			}
-
 			if err := q.CreatePersonRoleWahlperiode(ctx, db.CreatePersonRoleWahlperiodeParams{
 				PersonRoleID:      personRole.ID,
 				WahlperiodeNummer: int64(wp),
 			}); err != nil {
+				failedTracker.RecordIfDBLocked(personID, "CreatePersonRoleWahlperiode", err)
 				log.Printf("Warning: Failed to link role to wahlperiode %d: %v", wp, err)
 			}
 		}
 	}
-
-	return nil
 }

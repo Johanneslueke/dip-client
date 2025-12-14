@@ -1,0 +1,72 @@
+[
+  {
+    "id": "8075",
+    "reason": "GetOrCreateWahlperiode: database is locked (5) (SQLITE_BUSY)",
+    "timestamp": "2025-12-14T14:45:32.950356597Z"
+  },
+  {
+    "id": "8069",
+    "reason": "GetOrCreateWahlperiode: database is locked (5) (SQLITE_BUSY)",
+    "timestamp": "2025-12-14T14:45:32.950392666Z"
+  },
+  {
+    "id": "8067",
+    "reason": "GetOrCreateWahlperiode: database is locked (5) (SQLITE_BUSY)",
+    "timestamp": "2025-12-14T14:45:32.950426295Z"
+  },
+  {
+    "id": "8066",
+    "reason": "GetOrCreateWahlperiode: database is locked (5) (SQLITE_BUSY)",
+    "timestamp": "2025-12-14T14:45:32.950456025Z"
+  },
+  {
+    "id": "8063",
+    "reason": "GetOrCreateWahlperiode: database is locked (5) (SQLITE_BUSY)",
+    "timestamp": "2025-12-14T14:45:32.950500625Z"
+  },
+  {
+    "id": "8059",
+    "reason": "GetOrCreateWahlperiode: database is locked (5) (SQLITE_BUSY)",
+    "timestamp": "2025-12-14T14:45:32.950531874Z"
+  },
+  {
+    "id": "8058",
+    "reason": "GetOrCreateWahlperiode: database is locked (5) (SQLITE_BUSY)",
+    "timestamp": "2025-12-14T14:45:32.950562413Z"
+  },
+  {
+    "id": "8052",
+    "reason": "GetOrCreateWahlperiode: database is locked (5) (SQLITE_BUSY)",
+    "timestamp": "2025-12-14T14:45:32.950590012Z"
+  },
+  {
+    "id": "8045",
+    "reason": "GetOrCreateWahlperiode: database is locked (5) (SQLITE_BUSY)",
+    "timestamp": "2025-12-14T14:45:32.950626822Z"
+  },
+  {
+    "id": "8041",
+    "reason": "GetOrCreateWahlperiode: database is locked (5) (SQLITE_BUSY)",
+    "timestamp": "2025-12-14T14:45:32.950660492Z"
+  },
+  {
+    "id": "8040",
+    "reason": "GetOrCreateWahlperiode: database is locked (5) (SQLITE_BUSY)",
+    "timestamp": "2025-12-14T14:45:32.950690622Z"
+  },
+  {
+    "id": "8036",
+    "reason": "GetOrCreateWahlperiode: database is locked (5) (SQLITE_BUSY)",
+    "timestamp": "2025-12-14T14:45:32.950717491Z"
+  },
+  {
+    "id": "8034",
+    "reason": "GetOrCreateWahlperiode: database is locked (5) (SQLITE_BUSY)",
+    "timestamp": "2025-12-14T14:45:32.950743661Z"
+  },
+  {
+    "id": "8033",
+    "reason": "CreatePerson: database is locked (5) (SQLITE_BUSY)",
+    "timestamp": "2025-12-14T14:45:32.950926357Z"
+  }
+]

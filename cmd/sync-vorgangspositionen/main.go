@@ -24,6 +24,7 @@ func main() {
 		dbPath        = flag.String("db", "dip.db", "SQLite database path")
 		limit         = flag.Int("limit", 0, "Maximum number of vorgangspositionen to fetch (0 = all)")
 		checkpointDir = flag.String("checkpoint-dir", ".checkpoints", "Directory to store checkpoints")
+		failedDir     = flag.String("failed-dir", ".failed", "Directory to store failed record IDs")
 		resume        = flag.Bool("resume", false, "Resume from last checkpoint")
 		end           = flag.String("end", "", "End date for sync (YYYY-MM-DD)")
 	)
@@ -61,8 +62,9 @@ func main() {
 
 	queries := db.New(sqlDB)
 	ctx := context.Background()
-	limiter := utility.NewRateLimiter(23, time.Minute)
+	limiter := utility.NewRateLimiter(120, time.Minute)
 	progress := utility.NewProgressTracker(*limit)
+	failedTracker := utility.NewFailedRecordsTracker(*failedDir, "vorgangspositionen")
 
 	// Checkpoint and signal handling
 	var datumEnd *openapi_types.Date
@@ -135,12 +137,11 @@ func main() {
 			break
 		}
 
-		progress.PrintProgress(progress.Total+len(resp.Documents), int(resp.NumFound))
+		progress.Total += len(resp.Documents)
+		progress.PrintProgress(progress.Total, int(resp.NumFound))
 
 		for _, vorgangsposition := range resp.Documents {
-			if err := storeVorgangsposition(ctx, queries, vorgangsposition); err != nil {
-				log.Printf("Warning: Failed to store vorgangsposition %s: %v", vorgangsposition.Id, err)
-			}
+			storeVorgangsposition(ctx, queries, vorgangsposition, failedTracker)
 
 			// Track the last processed date for checkpoint
 			if vorgangsposition.Aktualisiert.After(lastProcessedDate) {
@@ -168,6 +169,15 @@ done:
 	log.Printf("Successfully stored %d vorgangspositionen in database %s (%.1f/sec, took %s)",
 		progress.Total, *dbPath, rate, elapsed.Round(time.Second))
 
+	// Save failed records if any
+	if failedTracker.Count() > 0 {
+		if err := failedTracker.Save(); err != nil {
+			log.Printf("Warning: Failed to save failed records: %v", err)
+		} else {
+			log.Printf("⚠️  %d records failed due to DB locks, saved to %s/vorgangspositionen.failed.json", failedTracker.Count(), *failedDir)
+		}
+	}
+
 	// Delete checkpoint on successful completion
 	if !interrupted && *resume {
 		if err := utility.DeleteCheckpoint(*checkpointDir, "vorgangspositionen"); err != nil {
@@ -176,10 +186,12 @@ done:
 	}
 }
 
-func storeVorgangsposition(ctx context.Context, q *db.Queries, vorgangsposition client.Vorgangsposition) error {
+func storeVorgangsposition(ctx context.Context, q *db.Queries, vorgangsposition client.Vorgangsposition, failedTracker *utility.FailedRecordsTracker) {
 	existing, err := q.GetVorgangsposition(ctx, vorgangsposition.Id)
 	if err != nil && err != sql.ErrNoRows {
-		return fmt.Errorf("failed to check if vorgangsposition exists: %w", err)
+		failedTracker.RecordIfDBLocked(vorgangsposition.Id, "GetVorgangsposition", err)
+		log.Printf("Warning: Failed to check if vorgangsposition %s exists: %v", vorgangsposition.Id, err)
+		return
 	}
 
 	ptrToNullString := func(s *string) sql.NullString {
@@ -273,11 +285,15 @@ func storeVorgangsposition(ctx context.Context, q *db.Queries, vorgangsposition 
 			AktivitaetAnzahl: params.AktivitaetAnzahl,
 		}
 		if _, err := q.UpdateVorgangsposition(ctx, updateParams); err != nil {
-			return fmt.Errorf("failed to update vorgangsposition: %w", err)
+			failedTracker.RecordIfDBLocked(vorgangsposition.Id, "UpdateVorgangsposition", err)
+			log.Printf("Warning: Failed to update vorgangsposition %s: %v", vorgangsposition.Id, err)
+			return
 		}
 	} else {
 		if _, err := q.CreateVorgangsposition(ctx, params); err != nil {
-			return fmt.Errorf("failed to create vorgangsposition: %w", err)
+			failedTracker.RecordIfDBLocked(vorgangsposition.Id, "CreateVorgangsposition", err)
+			log.Printf("Warning: Failed to create vorgangsposition %s: %v", vorgangsposition.Id, err)
+			return
 		}
 	}
 
@@ -292,6 +308,7 @@ func storeVorgangsposition(ctx context.Context, q *db.Queries, vorgangsposition 
 				PdfUrl:             ptrToNullString(aktivitaet.PdfUrl),
 				DisplayOrder:       int64(idx),
 			}); err != nil {
+				failedTracker.RecordIfDBLocked(vorgangsposition.Id, "CreateAktivitaetAnzeige", err)
 				log.Printf("Warning: Failed to store aktivitaet anzeige for vorgangsposition %s: %v", vorgangsposition.Id, err)
 			}
 		}
@@ -320,6 +337,7 @@ func storeVorgangsposition(ctx context.Context, q *db.Queries, vorgangsposition 
 				Grundlage:                ptrToNullString(beschluss.Grundlage),
 				Seite:                    ptrToNullString(beschluss.Seite),
 			}); err != nil {
+				failedTracker.RecordIfDBLocked(vorgangsposition.Id, "CreateBeschlussfassung", err)
 				log.Printf("Warning: Failed to store beschlussfassung for vorgangsposition %s: %v", vorgangsposition.Id, err)
 			}
 		}
@@ -330,6 +348,7 @@ func storeVorgangsposition(ctx context.Context, q *db.Queries, vorgangsposition 
 		for _, ressort := range *vorgangsposition.Ressort {
 			ressortRecord, err := q.GetOrCreateRessort(ctx, ressort.Titel)
 			if err != nil {
+				failedTracker.RecordIfDBLocked(vorgangsposition.Id, "GetOrCreateRessort", err)
 				log.Printf("Warning: Failed to get or create ressort for vorgangsposition %s: %v", vorgangsposition.Id, err)
 				continue
 			}
@@ -344,6 +363,7 @@ func storeVorgangsposition(ctx context.Context, q *db.Queries, vorgangsposition 
 				RessortID:          ressortRecord.ID,
 				Federfuehrend:      federfuehrend,
 			}); err != nil {
+				failedTracker.RecordIfDBLocked(vorgangsposition.Id, "CreateVorgangspositionRessort", err)
 				log.Printf("Warning: Failed to store ressort for vorgangsposition %s: %v", vorgangsposition.Id, err)
 			}
 		}
@@ -357,6 +377,7 @@ func storeVorgangsposition(ctx context.Context, q *db.Queries, vorgangsposition 
 				Titel:       urheber.Titel,
 			})
 			if err != nil {
+				failedTracker.RecordIfDBLocked(vorgangsposition.Id, "GetOrCreateUrheber", err)
 				log.Printf("Warning: Failed to get or create urheber for vorgangsposition %s: %v", vorgangsposition.Id, err)
 				continue
 			}
@@ -377,6 +398,7 @@ func storeVorgangsposition(ctx context.Context, q *db.Queries, vorgangsposition 
 				Rolle:              rolle,
 				Einbringer:         einbringer,
 			}); err != nil {
+				failedTracker.RecordIfDBLocked(vorgangsposition.Id, "CreateVorgangspositionUrheber", err)
 				log.Printf("Warning: Failed to store urheber for vorgangsposition %s: %v", vorgangsposition.Id, err)
 			}
 		}
@@ -392,6 +414,7 @@ func storeVorgangsposition(ctx context.Context, q *db.Queries, vorgangsposition 
 				Federfuehrung:      boolToInt64(ueberweisung.Federfuehrung),
 				Ueberweisungsart:   ptrToNullString(ueberweisung.Ueberweisungsart),
 			}); err != nil {
+				failedTracker.RecordIfDBLocked(vorgangsposition.Id, "CreateUeberweisung", err)
 				log.Printf("Warning: Failed to store ueberweisung for vorgangsposition %s: %v", vorgangsposition.Id, err)
 			}
 		}
@@ -407,10 +430,9 @@ func storeVorgangsposition(ctx context.Context, q *db.Queries, vorgangsposition 
 				MitberatenVorgangsposition: mitberaten.Vorgangsposition,
 				MitberatenVorgangstyp:      mitberaten.Vorgangstyp,
 			}); err != nil {
+				failedTracker.RecordIfDBLocked(vorgangsposition.Id, "CreateVorgangspositionMitberaten", err)
 				log.Printf("Warning: Failed to store mitberaten for vorgangsposition %s: %v", vorgangsposition.Id, err)
 			}
 		}
 	}
-
-	return nil
 }

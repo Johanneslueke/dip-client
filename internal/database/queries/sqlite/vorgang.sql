@@ -3,6 +3,9 @@ SELECT *
 FROM vorgang
 WHERE id = ?;
 
+-- name: GetLatestVorgangDatum :one
+SELECT MIN(datum) as datum FROM vorgang;
+
 -- name: GetVorgangWithInitiative :many
 SELECT 
     v.*,
