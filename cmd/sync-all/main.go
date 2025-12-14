@@ -131,7 +131,7 @@ func main() {
 
 		cmdStart := time.Now()
 
-		args := []string{"--key", *apiKey, "--db", *dbPath}
+		args := []string{"--key", *apiKey, "--db", *dbPath, "--resume", "true"}
 		if *limit > 0 {
 			args = append(args, "--limit", fmt.Sprintf("%d", *limit))
 		}

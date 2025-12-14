@@ -57,6 +57,7 @@ func LoadCheckpoint(checkpointDir, syncName string) (*SyncCheckpoint, error) {
 		return nil, fmt.Errorf("failed to unmarshal checkpoint: %w", err)
 	}
 
+	fmt.Println("Checkpoint has been loaded")
 	return &checkpoint, nil
 }
 
