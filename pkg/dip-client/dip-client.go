@@ -9,7 +9,7 @@ import (
 	"io"
 	"net/http"
 
-	client "github.com/Johanneslueke/dip-client/internal/gen"
+	client "github.com/Johanneslueke/dip-client/internal/gen/v1.4"
 )
 
 // Re-exported types from the generated client.

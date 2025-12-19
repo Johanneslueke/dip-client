@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	client "github.com/Johanneslueke/dip-client/internal/gen"
+	client "github.com/Johanneslueke/dip-client/internal/gen/v1.4"
 )
 
 // mockClientWithResponses is a mock implementation for testing

@@ -9,9 +9,8 @@ import (
 	"time"
 
 	db "github.com/Johanneslueke/dip-client/internal/database/gen/sqlite"
-	client "github.com/Johanneslueke/dip-client/internal/gen"
+	client "github.com/Johanneslueke/dip-client/internal/gen/v1.4"
 	"github.com/Johanneslueke/dip-client/internal/utility"
-	dipclient "github.com/Johanneslueke/dip-client/pkg/dip-client"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 	_ "modernc.org/sqlite"
 )
@@ -53,28 +52,34 @@ func main() {
 			if config.Wahlperiode != "" {
 				//split and convert to []WahlperiodeFilter if slice only contains one element use FWahlperiode if it contains multiple use FWahlperiodes
 				wpStrings := strings.Split(config.Wahlperiode, ",")
+
 				if len(wpStrings) == 1 {
 					// parse single int
 					wpInt, err := strconv.Atoi(wpStrings[0])
 					if err != nil {
 						log.Fatalf("Invalid wahlperiode value: %v", err)
-					}
-					wpFilter := dipclient.WahlperiodeFilter(wpInt)
+					} 
+						
+					wpFilter := make([]int, 1)
+					wpFilter[0] = wpInt
 					params.FWahlperiode = &wpFilter
 				} else {
-					var wpFilters []dipclient.WahlperiodeFilter
+					wpFilters := make(client.WahlperiodeFilter, 0, len(wpStrings))
 					for _, wpStr := range wpStrings {
 						wpInt, err := strconv.Atoi(wpStr)
 						if err != nil {
 							log.Fatalf("Invalid wahlperiode value: %v", err)
 						}
-						wpFilters = append(wpFilters, dipclient.WahlperiodeFilter(wpInt))
+						wpFilters = append(wpFilters, wpInt)
 					}
-					params.FWahlperiodes = &wpFilters
+					params.FWahlperiode = &wpFilters
 				}
 			}
+
 			if config.VorgangID > 0 {
-				params.FId = &config.VorgangID
+				vorgangIds := make(client.IdFilter, 1)
+				vorgangIds[0] = config.VorgangID
+				params.FId = &vorgangIds	
 			}
 
 			resp, err := syncCtx.Client.GetDrucksacheList(ctx, params)

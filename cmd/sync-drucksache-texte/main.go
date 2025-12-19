@@ -6,7 +6,7 @@ import (
 	"log"
 
 	db "github.com/Johanneslueke/dip-client/internal/database/gen/sqlite"
-	client "github.com/Johanneslueke/dip-client/internal/gen"
+	client "github.com/Johanneslueke/dip-client/internal/gen/v1.4"
 	"github.com/Johanneslueke/dip-client/internal/utility"
 	_ "modernc.org/sqlite"
 )

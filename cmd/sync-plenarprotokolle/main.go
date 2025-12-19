@@ -7,7 +7,7 @@ import (
 	"time"
 
 	db "github.com/Johanneslueke/dip-client/internal/database/gen/sqlite"
-	client "github.com/Johanneslueke/dip-client/internal/gen"
+	client "github.com/Johanneslueke/dip-client/internal/gen/v1.4"
 	"github.com/Johanneslueke/dip-client/internal/utility"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 	_ "modernc.org/sqlite"
