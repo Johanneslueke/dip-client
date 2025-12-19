@@ -652,8 +652,7 @@ SELECT
 FROM aktivitaet
 WHERE wahlperiode IN (13, 14, 15, 18, 19, 20, 21)
 GROUP BY wahlperiode
-ORDER BY wahlperiode; BY titel
-);
+ORDER BY wahlperiode;
 
 -- 10B: Peak Activity Periods (Most Active Months)
 SELECT 
