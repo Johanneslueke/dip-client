@@ -127,7 +127,7 @@ WHERE a.wahlperiode IN (13, 14, 15, 18, 19, 20, 21)
 GROUP BY a.titel, fraktion, a.wahlperiode
 HAVING kleine_anfragen > 50  -- Filter for active questioners
 ORDER BY kleine_anfragen DESC
-LIMIT 50;kleine_anfragen DESC
+LIMIT 50;
 -- 2B: Legislative Specialists (Gesetzentwurf/Antrag focused)
 SELECT 
     a.titel as person_name,
