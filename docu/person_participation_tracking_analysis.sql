@@ -292,9 +292,6 @@ GROUP BY a.titel, fraktion, a.wahlperiode
 HAVING (first_half_count + second_half_count) > 100
 ORDER BY a.wahlperiode DESC, (first_half_count + second_half_count) DESC
 LIMIT 100;
-GROUP BY a.titel, fraktion, a.wahlperiode
-HAVING (first_half_count + second_half_count) > 50
-ORDER BY a.wahlperiode DESC, (first_half_count + second_half_count) DESC;
 
 -- ============================================================================
 -- PART 5: CO-PARTICIPATION NETWORKS
