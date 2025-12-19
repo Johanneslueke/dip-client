@@ -254,8 +254,7 @@ SELECT
 FROM aktivitaet a
 WHERE a.titel IN (SELECT person_name FROM top_30_persons)
 GROUP BY a.titel, a.wahlperiode, month
-ORDER BY a.titel, a.wahlperiode, month; person_name FROM top_20_persons)
-AND a.wahlperiode = 21
+ORDER BY a.titel, a.wahlperiode, month;
 -- 4B: Activity Trends - First Half vs Second Half of Wahlperiode
 WITH wp_midpoint AS (
     SELECT 
