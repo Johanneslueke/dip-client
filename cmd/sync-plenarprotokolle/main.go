@@ -3,88 +3,33 @@ package main
 import (
 	"context"
 	"database/sql"
-	"flag"
-	"fmt"
 	"log"
-	"os"
 	"time"
 
 	db "github.com/Johanneslueke/dip-client/internal/database/gen/sqlite"
 	client "github.com/Johanneslueke/dip-client/internal/gen"
 	"github.com/Johanneslueke/dip-client/internal/utility"
-	dipclient "github.com/Johanneslueke/dip-client/pkg/dip-client"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 	_ "modernc.org/sqlite"
 )
 
 func main() {
-	var (
-		baseURL       = flag.String("url", "https://search.dip.bundestag.de/api/v1", "API base URL")
-		apiKey        = flag.String("key", "", "API key")
-		dbPath        = flag.String("db", "dip.db", "SQLite database path")
-		limit         = flag.Int("limit", 0, "Maximum number of plenarprotokolle to fetch (0 = all)")
-		checkpointDir = flag.String("checkpoint-dir", ".checkpoints", "Directory to store checkpoints")
-		failedDir     = flag.String("failed-dir", ".failed", "Directory to store failed record IDs")
-		resume        = flag.Bool("resume", false, "Resume from last checkpoint")
-		end           = flag.String("end", "", "End date for sync (YYYY-MM-DD)")
-	)
-	flag.Parse()
+	// Parse configuration
+	config := utility.ParseSyncFlags("plenarprotokolle")
 
-	if *apiKey == "" {
-		*apiKey = os.Getenv("DIP_API_KEY")
-	}
-
-	if *apiKey == "" {
-		log.Fatal("API key required (use -key flag or DIP_API_KEY environment variable)")
-	}
-
-	dipClient, err := dipclient.New(dipclient.Config{
-		BaseURL: *baseURL,
-		APIKey:  *apiKey,
-	})
+	// Create sync context (handles all setup)
+	syncCtx, err := utility.NewSyncContext(config, 240)
 	if err != nil {
-		log.Fatalf("Failed to create API client: %v", err)
+		log.Fatal(err)
 	}
+	defer syncCtx.Close()
 
-	sqlDB, err := sql.Open("sqlite", *dbPath)
-	if err != nil {
-		log.Fatalf("Failed to open database: %v", err)
-	}
-	defer sqlDB.Close()
+	// Load checkpoint if resuming
+	datumEnd, _ := syncCtx.CheckpointMgr.LoadIfResume()
 
-	sqlDB.SetMaxOpenConns(24)
-	sqlDB.SetMaxIdleConns(24)
-	sqlDB.SetConnMaxLifetime(time.Hour)
-
-	if err := utility.RunMigrations(sqlDB); err != nil {
-		log.Fatalf("Failed to run migrations: %v", err)
-	}
-
-	queries := db.New(sqlDB)
-	ctx := context.Background()
-	limiter := utility.NewRateLimiter(120, time.Minute)
-	progress := utility.NewProgressTracker(*limit)
-	failedTracker := utility.NewFailedRecordsTracker(*failedDir, "plenarprotokolle")
-
-	// Checkpoint and signal handling
-	var datumEnd *openapi_types.Date
-	var lastProcessedDate time.Time
-	interrupted := false
-
-	if *resume {
-		checkpoint, err := utility.LoadCheckpoint(*checkpointDir, "plenarprotokolle")
-		if err != nil {
-			log.Printf("Warning: Failed to load checkpoint: %v", err)
-		} else if checkpoint != nil {
-			lastProcessedDate = checkpoint.LastSyncDate
-			date := openapi_types.Date{Time: lastProcessedDate}
-			datumEnd = &date
-			log.Printf("Resuming from checkpoint: %s", lastProcessedDate.Format("2006-01-02"))
-		}
-	}
-
-	if *end != "" {
-		endTime, err := time.Parse("2006-01-02", *end)
+	// Parse end date if provided
+	if config.End != "" {
+		endTime, err := time.Parse("2006-01-02", config.End)
 		if err != nil {
 			log.Fatalf("Invalid end date format: %v", err)
 		}
@@ -92,101 +37,71 @@ func main() {
 		datumEnd = &date
 	}
 
-	signalHandler := utility.NewSignalHandler(
-		func() {
-			interrupted = true
-			if !lastProcessedDate.IsZero() {
-				if err := utility.SaveCheckpoint(*checkpointDir, "plenarprotokolle", lastProcessedDate); err != nil {
-					log.Printf("Error saving checkpoint: %v", err)
-				} else {
-					log.Printf("Checkpoint saved at %s", lastProcessedDate.Format("2006-01-02"))
-				}
+	// Run sync loop
+	err = syncCtx.SyncLoop(
+		// Fetch batch function
+		func(ctx context.Context, cursor *string) (*utility.BatchResponse, error) {
+			params := &client.GetPlenarprotokollListParams{
+				Cursor:    cursor,
+				FDatumEnd: datumEnd,
 			}
+
+			resp, err := syncCtx.Client.GetPlenarprotokollList(ctx, params)
+			if err != nil {
+				return nil, err
+			}
+
+			return &utility.BatchResponse{
+				Documents:    resp.Documents,
+				Cursor:       resp.Cursor,
+				NumFound:     int(resp.NumFound),
+				DocumentsLen: len(resp.Documents),
+			}, nil
 		},
-		nil,
+		// Store item function
+		storePlenarprotokoll,
+		// Update checkpoint date function
+		updatePlenarprotokollDate,
+		// Extract items function
+		func(docs interface{}) []interface{} {
+			protokolle := docs.([]client.Plenarprotokoll)
+			items := make([]interface{}, len(protokolle))
+			for i, p := range protokolle {
+				items[i] = p
+			}
+			return items
+		},
 	)
-	defer signalHandler.Stop()
 
-	var cursor *string
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	log.Printf("Starting to fetch plenarprotokolle from API...")
+	// Finalize (handles all cleanup and logging)
+	syncCtx.Finalize()
+}
 
-	for {
-		// Check if interrupted
-		if signalHandler.IsInterrupted() || interrupted {
-			fmt.Println() // New line after progress updates
-			log.Printf("Interrupted after processing %d plenarprotokolle", progress.Total)
-			return
-		}
-
-		if err := limiter.Wait(ctx); err != nil {
-			log.Fatalf("Rate limiter error: %v", err)
-		}
-
-		params := &client.GetPlenarprotokollListParams{
-			Cursor:    cursor,
-			FDatumEnd: datumEnd,
-		}
-
-		resp, err := dipClient.GetPlenarprotokollList(ctx, params)
+func updatePlenarprotokollDate(ctx context.Context, q *db.Queries, item interface{}, checkpointMgr *utility.CheckpointManager) {
+	plenarprotokoll := item.(client.Plenarprotokoll)
+	if !plenarprotokoll.Datum.IsZero() {
+		datum, err := q.GetLatestPlenarprotokollDatum(ctx)
 		if err != nil {
-			log.Fatalf("Failed to fetch plenarprotokolle: %v", err)
-		}
-
-		if len(resp.Documents) == 0 {
-			break
-		}
-
-		progress.Total += len(resp.Documents)
-		progress.PrintProgress(progress.Total, int(resp.NumFound))
-
-		for _, plenarprotokoll := range resp.Documents {
-			storePlenarprotokoll(ctx, queries, plenarprotokoll, failedTracker)
-
-			// Track the last processed date for checkpoint
-			if plenarprotokoll.Aktualisiert.After(lastProcessedDate) {
-				lastProcessedDate = plenarprotokoll.Aktualisiert
+			log.Printf("Warning: Failed to get latest plenarprotokoll datum: %v", err)
+			checkpointMgr.UpdateDate(plenarprotokoll.Aktualisiert)
+		} else if t, ok := datum.(string); ok {
+			if parsedDate, err := time.Parse("2006-01-02", t); err == nil {
+				checkpointMgr.UpdateDate(parsedDate)
+			} else {
+				checkpointMgr.UpdateDate(plenarprotokoll.Aktualisiert)
 			}
-
-			progress.Increment()
-
-			if *limit > 0 && progress.Total >= *limit {
-				fmt.Println() // New line before final message
-				log.Printf("Reached limit of %d plenarprotokolle", *limit)
-				goto done
-			}
-		}
-
-		if resp.Cursor == "" {
-			break
-		}
-		cursor = &resp.Cursor
-	}
-
-done:
-	fmt.Println() // New line after progress updates
-	elapsed, rate := progress.GetStats()
-	log.Printf("Successfully stored %d plenarprotokolle in database %s (%.1f/sec, took %s)",
-		progress.Total, *dbPath, rate, elapsed.Round(time.Second))
-
-	// Save failed records if any
-	if failedTracker.Count() > 0 {
-		if err := failedTracker.Save(); err != nil {
-			log.Printf("Warning: Failed to save failed records: %v", err)
 		} else {
-			log.Printf("⚠️  %d records failed due to DB locks, saved to %s/plenarprotokolle.failed.json", failedTracker.Count(), *failedDir)
-		}
-	}
-
-	// Delete checkpoint on successful completion
-	if !interrupted && *resume {
-		if err := utility.DeleteCheckpoint(*checkpointDir, "plenarprotokolle"); err != nil {
-			log.Printf("Warning: Failed to delete checkpoint: %v", err)
+			checkpointMgr.UpdateDate(plenarprotokoll.Aktualisiert)
 		}
 	}
 }
 
-func storePlenarprotokoll(ctx context.Context, q *db.Queries, plenarprotokoll client.Plenarprotokoll, failedTracker *utility.FailedRecordsTracker) {
+func storePlenarprotokoll(ctx context.Context, q *db.Queries, item interface{}, failedTracker *utility.FailedRecordsTracker) {
+	plenarprotokoll := item.(client.Plenarprotokoll)
 	existing, err := q.GetPlenarprotokoll(ctx, plenarprotokoll.Id)
 	if err != nil && err != sql.ErrNoRows {
 		failedTracker.RecordIfDBLocked(plenarprotokoll.Id, "GetPlenarprotokoll", err)

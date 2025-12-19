@@ -59,24 +59,6 @@ type AktivitaetDeskriptor struct {
 	CreatedAt    string `json:"created_at"`
 }
 
-type AktivitaetOverview struct {
-	ID                       string         `json:"id"`
-	Titel                    string         `json:"titel"`
-	Aktivitaetsart           string         `json:"aktivitaetsart"`
-	Dokumentart              string         `json:"dokumentart"`
-	Datum                    string         `json:"datum"`
-	Aktualisiert             string         `json:"aktualisiert"`
-	Abstract                 sql.NullString `json:"abstract"`
-	Wahlperiode              int64          `json:"wahlperiode"`
-	FundstelleDokumentnummer string         `json:"fundstelle_dokumentnummer"`
-	FundstelleDatum          string         `json:"fundstelle_datum"`
-	FundstellePdfUrl         sql.NullString `json:"fundstelle_pdf_url"`
-	Deskriptoren             string         `json:"deskriptoren"`
-	Vorgaenge                string         `json:"vorgaenge"`
-	CreatedAt                string         `json:"created_at"`
-	UpdatedAt                string         `json:"updated_at"`
-}
-
 type AktivitaetVorgangsbezug struct {
 	AktivitaetID     string `json:"aktivitaet_id"`
 	VorgangID        string `json:"vorgang_id"`
@@ -150,26 +132,6 @@ type DrucksacheAutorAnzeige struct {
 	CreatedAt    string `json:"created_at"`
 }
 
-type DrucksacheOverview struct {
-	ID               string         `json:"id"`
-	Titel            string         `json:"titel"`
-	Dokumentnummer   string         `json:"dokumentnummer"`
-	Dokumentart      string         `json:"dokumentart"`
-	Drucksachetyp    string         `json:"drucksachetyp"`
-	Herausgeber      string         `json:"herausgeber"`
-	Datum            string         `json:"datum"`
-	Aktualisiert     string         `json:"aktualisiert"`
-	Wahlperiode      sql.NullInt64  `json:"wahlperiode"`
-	FundstellePdfUrl sql.NullString `json:"fundstelle_pdf_url"`
-	Volltext         sql.NullString `json:"volltext"`
-	Autoren          string         `json:"autoren"`
-	Ressorts         string         `json:"ressorts"`
-	Urheber          string         `json:"urheber"`
-	Vorgaenge        string         `json:"vorgaenge"`
-	CreatedAt        string         `json:"created_at"`
-	UpdatedAt        string         `json:"updated_at"`
-}
-
 type DrucksacheRessort struct {
 	DrucksacheID  string `json:"drucksache_id"`
 	RessortID     int64  `json:"ressort_id"`
@@ -206,49 +168,142 @@ type FundstelleUrheber struct {
 	CreatedAt         string         `json:"created_at"`
 }
 
-type GesetzTimeline struct {
-	EntityType       string         `json:"entity_type"`
-	EntityID         string         `json:"entity_id"`
-	EventDate        sql.NullString `json:"event_date"`
-	EventTitle       string         `json:"event_title"`
-	EventDescription string         `json:"event_description"`
-	Status           sql.NullString `json:"status"`
-	PdfUrl           interface{}    `json:"pdf_url"`
-	VorgangID        string         `json:"vorgang_id"`
-}
-
-type GesetzTrace struct {
-	VorgangID                 string         `json:"vorgang_id"`
-	GesetzTitel               string         `json:"gesetz_titel"`
-	Vorgangstyp               string         `json:"vorgangstyp"`
-	Beratungsstand            sql.NullString `json:"beratungsstand"`
-	VorgangDatum              sql.NullString `json:"vorgang_datum"`
-	VorgangAktualisiert       string         `json:"vorgang_aktualisiert"`
-	Wahlperiode               int64          `json:"wahlperiode"`
-	Gesta                     sql.NullString `json:"gesta"`
-	Sachgebiete               string         `json:"sachgebiete"`
-	Initiativen               string         `json:"initiativen"`
-	Deskriptoren              string         `json:"deskriptoren"`
-	Ausfertigungsdatum        sql.NullString `json:"ausfertigungsdatum"`
-	Verkuendungsdatum         sql.NullString `json:"verkuendungsdatum"`
-	VerkuendungFundstelle     sql.NullString `json:"verkuendung_fundstelle"`
-	VerkuendungPdfUrl         sql.NullString `json:"verkuendung_pdf_url"`
-	InkrafttretenDatum        sql.NullString `json:"inkrafttreten_datum"`
-	InkrafttretenErlaeuterung sql.NullString `json:"inkrafttreten_erlaeuterung"`
-	AnzahlVorgangspositionen  int64          `json:"anzahl_vorgangspositionen"`
-	AnzahlAktivitaeten        int64          `json:"anzahl_aktivitaeten"`
-	AnzahlDrucksachen         int64          `json:"anzahl_drucksachen"`
-	AnzahlPlenarprotokolle    int64          `json:"anzahl_plenarprotokolle"`
-	CreatedAt                 string         `json:"created_at"`
-	UpdatedAt                 string         `json:"updated_at"`
-}
-
 type Inkrafttreten struct {
 	ID           int64          `json:"id"`
 	VorgangID    string         `json:"vorgang_id"`
 	Datum        string         `json:"datum"`
 	Erlaeuterung sql.NullString `json:"erlaeuterung"`
 	CreatedAt    string         `json:"created_at"`
+}
+
+type MdbBiographical struct {
+	ID                            int64          `json:"id"`
+	MdbID                         string         `json:"mdb_id"`
+	Geburtsdatum                  sql.NullString `json:"geburtsdatum"`
+	Geburtsort                    sql.NullString `json:"geburtsort"`
+	Geburtsland                   sql.NullString `json:"geburtsland"`
+	Sterbedatum                   sql.NullString `json:"sterbedatum"`
+	Geschlecht                    sql.NullString `json:"geschlecht"`
+	Familienstand                 sql.NullString `json:"familienstand"`
+	Religion                      sql.NullString `json:"religion"`
+	Beruf                         sql.NullString `json:"beruf"`
+	ParteiKurz                    sql.NullString `json:"partei_kurz"`
+	VitaKurz                      sql.NullString `json:"vita_kurz"`
+	Veroeffentlichungspflichtiges sql.NullString `json:"veroeffentlichungspflichtiges"`
+	CreatedAt                     string         `json:"created_at"`
+	UpdatedAt                     string         `json:"updated_at"`
+}
+
+type MdbCareerSummary struct {
+	MdbID              string         `json:"mdb_id"`
+	Nachname           string         `json:"nachname"`
+	Vorname            string         `json:"vorname"`
+	ParteiKurz         sql.NullString `json:"partei_kurz"`
+	AnzahlWahlperioden int64          `json:"anzahl_wahlperioden"`
+	ErsteWahlperiode   interface{}    `json:"erste_wahlperiode"`
+	LetzteWahlperiode  interface{}    `json:"letzte_wahlperiode"`
+	MandatBeginn       interface{}    `json:"mandat_beginn"`
+	MandatEnde         interface{}    `json:"mandat_ende"`
+	AnzahlFraktionen   int64          `json:"anzahl_fraktionen"`
+}
+
+type MdbCurrentMember struct {
+	MdbID       string         `json:"mdb_id"`
+	Nachname    string         `json:"nachname"`
+	Vorname     string         `json:"vorname"`
+	Ortszusatz  sql.NullString `json:"ortszusatz"`
+	AnredeTitel sql.NullString `json:"anrede_titel"`
+	AkadTitel   sql.NullString `json:"akad_titel"`
+	ParteiKurz  sql.NullString `json:"partei_kurz"`
+	Geschlecht  sql.NullString `json:"geschlecht"`
+	Wahlperiode int64          `json:"wahlperiode"`
+	Mandatsart  sql.NullString `json:"mandatsart"`
+	WkrName     sql.NullString `json:"wkr_name"`
+	WkrLand     sql.NullString `json:"wkr_land"`
+}
+
+type MdbFraktionSummary struct {
+	Fraktion         string `json:"fraktion"`
+	Wahlperiode      int64  `json:"wahlperiode"`
+	AnzahlMitglieder int64  `json:"anzahl_mitglieder"`
+	Direktmandate    int64  `json:"direktmandate"`
+	Listenmandate    int64  `json:"listenmandate"`
+}
+
+type MdbFullName struct {
+	MdbID        string         `json:"mdb_id"`
+	NameID       int64          `json:"name_id"`
+	DisplayName  interface{}    `json:"display_name"`
+	FullNachname interface{}    `json:"full_nachname"`
+	Vorname      string         `json:"vorname"`
+	Nachname     string         `json:"nachname"`
+	Ortszusatz   sql.NullString `json:"ortszusatz"`
+	Adel         sql.NullString `json:"adel"`
+	Praefix      sql.NullString `json:"praefix"`
+	AnredeTitel  sql.NullString `json:"anrede_titel"`
+	AkadTitel    sql.NullString `json:"akad_titel"`
+	HistorieVon  sql.NullString `json:"historie_von"`
+	HistorieBis  sql.NullString `json:"historie_bis"`
+	IsCurrent    int64          `json:"is_current"`
+}
+
+type MdbInstitutionMembership struct {
+	ID                         int64          `json:"id"`
+	MdbWahlperiodeMembershipID int64          `json:"mdb_wahlperiode_membership_id"`
+	InsartLang                 string         `json:"insart_lang"`
+	InsLang                    string         `json:"ins_lang"`
+	MdbinsVon                  sql.NullString `json:"mdbins_von"`
+	MdbinsBis                  sql.NullString `json:"mdbins_bis"`
+	FktLang                    sql.NullString `json:"fkt_lang"`
+	FktinsVon                  sql.NullString `json:"fktins_von"`
+	FktinsBis                  sql.NullString `json:"fktins_bis"`
+	CreatedAt                  string         `json:"created_at"`
+	UpdatedAt                  string         `json:"updated_at"`
+}
+
+type MdbName struct {
+	ID          int64          `json:"id"`
+	MdbID       string         `json:"mdb_id"`
+	Nachname    string         `json:"nachname"`
+	Vorname     string         `json:"vorname"`
+	Ortszusatz  sql.NullString `json:"ortszusatz"`
+	Adel        sql.NullString `json:"adel"`
+	Praefix     sql.NullString `json:"praefix"`
+	AnredeTitel sql.NullString `json:"anrede_titel"`
+	AkadTitel   sql.NullString `json:"akad_titel"`
+	HistorieVon sql.NullString `json:"historie_von"`
+	HistorieBis sql.NullString `json:"historie_bis"`
+	CreatedAt   string         `json:"created_at"`
+	UpdatedAt   string         `json:"updated_at"`
+}
+
+type MdbPerson struct {
+	ID        string `json:"id"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
+}
+
+type MdbStammdatenVersion struct {
+	ID         int64  `json:"id"`
+	Version    string `json:"version"`
+	ImportDate string `json:"import_date"`
+	SourceFile string `json:"source_file"`
+	CreatedAt  string `json:"created_at"`
+}
+
+type MdbWahlperiodeMembership struct {
+	ID         int64          `json:"id"`
+	MdbID      string         `json:"mdb_id"`
+	Wp         int64          `json:"wp"`
+	MdbwpVon   string         `json:"mdbwp_von"`
+	MdbwpBis   sql.NullString `json:"mdbwp_bis"`
+	WkrNummer  sql.NullString `json:"wkr_nummer"`
+	WkrName    sql.NullString `json:"wkr_name"`
+	WkrLand    sql.NullString `json:"wkr_land"`
+	Liste      sql.NullString `json:"liste"`
+	Mandatsart sql.NullString `json:"mandatsart"`
+	CreatedAt  string         `json:"created_at"`
+	UpdatedAt  string         `json:"updated_at"`
 }
 
 type Person struct {
@@ -263,6 +318,18 @@ type Person struct {
 	Datum        sql.NullString `json:"datum"`
 	CreatedAt    string         `json:"created_at"`
 	UpdatedAt    string         `json:"updated_at"`
+}
+
+type PersonMdbLink struct {
+	PersonID        string         `json:"person_id"`
+	MdbID           string         `json:"mdb_id"`
+	MatchConfidence string         `json:"match_confidence"`
+	MatchMethod     string         `json:"match_method"`
+	VerifiedBy      sql.NullString `json:"verified_by"`
+	VerifiedAt      sql.NullString `json:"verified_at"`
+	Notes           sql.NullString `json:"notes"`
+	CreatedAt       string         `json:"created_at"`
+	UpdatedAt       string         `json:"updated_at"`
 }
 
 type PersonRole struct {
@@ -290,6 +357,47 @@ type PersonWahlperiode struct {
 	PersonID          string `json:"person_id"`
 	WahlperiodeNummer int64  `json:"wahlperiode_nummer"`
 	CreatedAt         string `json:"created_at"`
+}
+
+type PersonWahlperiodeWithBio struct {
+	PersonID          string         `json:"person_id"`
+	DipNachname       string         `json:"dip_nachname"`
+	DipVorname        string         `json:"dip_vorname"`
+	WahlperiodeNummer int64          `json:"wahlperiode_nummer"`
+	MdbID             sql.NullString `json:"mdb_id"`
+	MdbNachname       sql.NullString `json:"mdb_nachname"`
+	MdbVorname        sql.NullString `json:"mdb_vorname"`
+	ParteiKurz        sql.NullString `json:"partei_kurz"`
+	Geschlecht        sql.NullString `json:"geschlecht"`
+	Geburtsdatum      sql.NullString `json:"geburtsdatum"`
+	Mandatsart        sql.NullString `json:"mandatsart"`
+	WkrName           sql.NullString `json:"wkr_name"`
+	WkrLand           sql.NullString `json:"wkr_land"`
+	MdbwpVon          sql.NullString `json:"mdbwp_von"`
+	MdbwpBis          sql.NullString `json:"mdbwp_bis"`
+}
+
+type PersonWithMdbBio struct {
+	PersonID             string         `json:"person_id"`
+	DipVorname           string         `json:"dip_vorname"`
+	DipNachname          string         `json:"dip_nachname"`
+	Typ                  string         `json:"typ"`
+	Aktualisiert         string         `json:"aktualisiert"`
+	MdbID                sql.NullString `json:"mdb_id"`
+	MatchConfidence      sql.NullString `json:"match_confidence"`
+	MdbNachname          sql.NullString `json:"mdb_nachname"`
+	MdbVorname           sql.NullString `json:"mdb_vorname"`
+	AnredeTitel          sql.NullString `json:"anrede_titel"`
+	AkadTitel            sql.NullString `json:"akad_titel"`
+	Geburtsdatum         sql.NullString `json:"geburtsdatum"`
+	Geburtsort           sql.NullString `json:"geburtsort"`
+	Geschlecht           sql.NullString `json:"geschlecht"`
+	ParteiKurz           sql.NullString `json:"partei_kurz"`
+	Beruf                sql.NullString `json:"beruf"`
+	VitaKurz             sql.NullString `json:"vita_kurz"`
+	AnzahlWahlperioden   int64          `json:"anzahl_wahlperioden"`
+	ErsteMitgliedschaft  interface{}    `json:"erste_mitgliedschaft"`
+	LetzteMitgliedschaft interface{}    `json:"letzte_mitgliedschaft"`
 }
 
 type Plenarprotokoll struct {
@@ -320,23 +428,6 @@ type Plenarprotokoll struct {
 	FundstelleTopZusatz       sql.NullString `json:"fundstelle_top_zusatz"`
 	CreatedAt                 string         `json:"created_at"`
 	UpdatedAt                 string         `json:"updated_at"`
-}
-
-type PlenarprotokollOverview struct {
-	ID                string         `json:"id"`
-	Titel             string         `json:"titel"`
-	Dokumentnummer    string         `json:"dokumentnummer"`
-	Dokumentart       string         `json:"dokumentart"`
-	Herausgeber       string         `json:"herausgeber"`
-	Datum             string         `json:"datum"`
-	Aktualisiert      string         `json:"aktualisiert"`
-	Sitzungsbemerkung sql.NullString `json:"sitzungsbemerkung"`
-	Wahlperiode       sql.NullInt64  `json:"wahlperiode"`
-	FundstellePdfUrl  sql.NullString `json:"fundstelle_pdf_url"`
-	Volltext          sql.NullString `json:"volltext"`
-	Vorgaenge         string         `json:"vorgaenge"`
-	CreatedAt         string         `json:"created_at"`
-	UpdatedAt         string         `json:"updated_at"`
 }
 
 type PlenarprotokollText struct {
@@ -503,26 +594,6 @@ type VorgangspositionMitberaten struct {
 	MitberatenVorgangstyp      string `json:"mitberaten_vorgangstyp"`
 }
 
-type VorgangspositionOverview struct {
-	ID                       string         `json:"id"`
-	VorgangID                string         `json:"vorgang_id"`
-	Titel                    string         `json:"titel"`
-	Vorgangsposition         string         `json:"vorgangsposition"`
-	Vorgangstyp              string         `json:"vorgangstyp"`
-	Dokumentart              string         `json:"dokumentart"`
-	Datum                    string         `json:"datum"`
-	Aktualisiert             string         `json:"aktualisiert"`
-	Abstract                 sql.NullString `json:"abstract"`
-	Zuordnung                string         `json:"zuordnung"`
-	FundstelleDokumentnummer string         `json:"fundstelle_dokumentnummer"`
-	FundstelleDatum          string         `json:"fundstelle_datum"`
-	FundstellePdfUrl         sql.NullString `json:"fundstelle_pdf_url"`
-	Ressorts                 string         `json:"ressorts"`
-	Urheber                  string         `json:"urheber"`
-	CreatedAt                string         `json:"created_at"`
-	UpdatedAt                string         `json:"updated_at"`
-}
-
 type VorgangspositionRessort struct {
 	VorgangspositionID string `json:"vorgangsposition_id"`
 	RessortID          int64  `json:"ressort_id"`
@@ -537,7 +608,9 @@ type VorgangspositionUrheber struct {
 }
 
 type Wahlperiode struct {
-	Nummer    int64  `json:"nummer"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
+	Nummer    int64         `json:"nummer"`
+	CreatedAt string        `json:"created_at"`
+	UpdatedAt string        `json:"updated_at"`
+	StartYear sql.NullInt64 `json:"start_year"`
+	EndYear   sql.NullInt64 `json:"end_year"`
 }

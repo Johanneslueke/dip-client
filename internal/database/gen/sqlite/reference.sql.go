@@ -157,13 +157,19 @@ INSERT INTO wahlperiode (nummer)
 VALUES (?)
 ON CONFLICT (nummer) DO UPDATE
 SET updated_at = datetime('now')
-RETURNING nummer, created_at, updated_at
+RETURNING nummer, created_at, updated_at, start_year, end_year
 `
 
 func (q *Queries) GetOrCreateWahlperiode(ctx context.Context, nummer int64) (Wahlperiode, error) {
 	row := q.db.QueryRowContext(ctx, getOrCreateWahlperiode, nummer)
 	var i Wahlperiode
-	err := row.Scan(&i.Nummer, &i.CreatedAt, &i.UpdatedAt)
+	err := row.Scan(
+		&i.Nummer,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.StartYear,
+		&i.EndYear,
+	)
 	return i, err
 }
 
@@ -281,7 +287,7 @@ func (q *Queries) ListUrheber(ctx context.Context) ([]Urheber, error) {
 }
 
 const listWahlperioden = `-- name: ListWahlperioden :many
-SELECT nummer, created_at, updated_at FROM wahlperiode
+SELECT nummer, created_at, updated_at, start_year, end_year FROM wahlperiode
 ORDER BY nummer DESC
 `
 
@@ -294,7 +300,13 @@ func (q *Queries) ListWahlperioden(ctx context.Context) ([]Wahlperiode, error) {
 	var items []Wahlperiode
 	for rows.Next() {
 		var i Wahlperiode
-		if err := rows.Scan(&i.Nummer, &i.CreatedAt, &i.UpdatedAt); err != nil {
+		if err := rows.Scan(
+			&i.Nummer,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.StartYear,
+			&i.EndYear,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

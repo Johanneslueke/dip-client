@@ -3,6 +3,9 @@ SELECT *
 FROM drucksache
 WHERE id = ?;
 
+-- name: GetLatestDrucksacheDatum :one
+SELECT MIN(datum) as datum FROM drucksache;
+
 -- name: GetDrucksacheWithRelations :many
 SELECT 
     d.*,

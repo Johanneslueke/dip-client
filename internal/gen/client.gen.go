@@ -432,6 +432,25 @@ func NewGetAktivitaetListRequest(server string, params *GetAktivitaetListParams)
 
 		}
 
+		if params.FWahlperiodes != nil {
+
+			// iterate over array/slice and add multiple query params
+			for _, val := range *params.FWahlperiodes {
+				if queryFrag, err := runtime.StyleParamWithLocation("form", true, "f.wahlperiode", runtime.ParamLocationQuery, val); err != nil {
+					return nil, err
+				} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+					return nil, err
+				} else {
+					for k, v := range parsed {
+						for _, v2 := range v {
+							queryValues.Add(k, v2)
+						}
+					}
+				}
+			}
+
+		}
+
 		if params.FDrucksache != nil {
 
 			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "f.drucksache", runtime.ParamLocationQuery, *params.FDrucksache); err != nil {
@@ -760,6 +779,26 @@ func NewGetDrucksacheListRequest(server string, params *GetDrucksacheListParams)
 			}
 
 		}
+
+		if params.FWahlperiodes != nil {
+
+			// iterate over array/slice and add multiple query params
+			for _, val := range *params.FWahlperiodes {
+				if queryFrag, err := runtime.StyleParamWithLocation("form", true, "f.wahlperiode", runtime.ParamLocationQuery, val); err != nil {
+					return nil, err
+				} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+					return nil, err
+				} else {
+					for k, v := range parsed {
+						for _, v2 := range v {
+							queryValues.Add(k, v2)
+						}
+					}
+				}
+			}
+
+		}
+
 
 		if params.FId != nil {
 
@@ -2345,6 +2384,25 @@ func NewGetVorgangspositionListRequest(server string, params *GetVorgangspositio
 				for k, v := range parsed {
 					for _, v2 := range v {
 						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.FWahlperiodes != nil {
+
+			// iterate over array/slice and add multiple query params
+			for _, val := range *params.FWahlperiodes {
+				if queryFrag, err := runtime.StyleParamWithLocation("form", true, "f.wahlperiode", runtime.ParamLocationQuery, val); err != nil {
+					return nil, err
+				} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+					return nil, err
+				} else {
+					for k, v := range parsed {
+						for _, v2 := range v {
+							queryValues.Add(k, v2)
+						}
 					}
 				}
 			}

@@ -3,6 +3,9 @@ SELECT *
 FROM vorgangsposition
 WHERE id = ?;
 
+-- name: GetLatestVorgangspositionDatum :one
+SELECT MIN(datum) as datum FROM vorgangsposition;
+
 -- name: GetVorgangspositionWithRessort :many
 SELECT 
     vp.*,

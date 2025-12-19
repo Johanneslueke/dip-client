@@ -3,6 +3,9 @@ SELECT *
 FROM plenarprotokoll
 WHERE id = ?;
 
+-- name: GetLatestPlenarprotokollDatum :one
+SELECT MIN(datum) as datum FROM plenarprotokoll;
+
 -- name: GetPlenarprotokollWithVorgangsbezug :many
 SELECT 
     p.*,

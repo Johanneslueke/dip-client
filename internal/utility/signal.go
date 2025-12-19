@@ -41,13 +41,19 @@ func NewSignalHandler(onFirstSignal, onSecondSignal SignalCallback) *SignalHandl
 
 // handleSignals processes incoming signals
 func (sh *SignalHandler) handleSignals() {
-	<-sh.sigChan
+	sig := <-sh.sigChan
 	sh.mu.Lock()
 	sh.interrupted = true
 	currentCmd := sh.currentCmd
 	sh.mu.Unlock()
 
+	if sig == nil {
+		return
+	}
 	fmt.Println("\n\n⚠️  Interrupt received (Ctrl-C). Stopping current process...")
+	fmt.Printf("%v\n", sig)
+	fmt.Println("⏳ Waiting for current operation to finish. Press Ctrl-C again to force quit.")
+	 
 
 	// Execute first signal callback
 	if sh.onFirstSignal != nil {
@@ -56,15 +62,23 @@ func (sh *SignalHandler) handleSignals() {
 
 	// Try to gracefully stop current process
 	if currentCmd != nil && currentCmd.Process != nil {
-		currentCmd.Process.Signal(os.Interrupt)
+		//only fire the Interrupt if the previous signal stemmed from ctrl-c
+		if sig == os.Interrupt {
+			currentCmd.Process.Signal(os.Interrupt)
+		} else {
+			return
+		}
+		
 	}
 
 	// Wait for second signal to force quit
-	<-sh.sigChan
+	sig = <-sh.sigChan
 	sh.mu.Lock()
 	currentCmd = sh.currentCmd
 	sh.mu.Unlock()
 
+	//print recieved signal 
+	fmt.Printf("\n\n⚠️  Second interrupt received (%v). Force quitting...\n", sig)
 	fmt.Println("\n❌ Force quit!")
 
 	// Execute second signal callback

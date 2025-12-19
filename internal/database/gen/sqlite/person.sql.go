@@ -203,6 +203,17 @@ func (q *Queries) DeletePersonWahlperioden(ctx context.Context, personID string)
 	return err
 }
 
+const getLatestPersonDatum = `-- name: GetLatestPersonDatum :one
+SELECT MIN(datum) as datum FROM person
+`
+
+func (q *Queries) GetLatestPersonDatum(ctx context.Context) (interface{}, error) {
+	row := q.db.QueryRowContext(ctx, getLatestPersonDatum)
+	var datum interface{}
+	err := row.Scan(&datum)
+	return datum, err
+}
+
 const getPerson = `-- name: GetPerson :one
 SELECT id, vorname, nachname, namenszusatz, titel, typ, aktualisiert, basisdatum, datum, created_at, updated_at
 FROM person

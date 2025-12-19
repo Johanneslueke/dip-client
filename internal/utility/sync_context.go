@@ -47,7 +47,7 @@ func NewSyncContext(config *SyncConfig, requestsPerMinute int) (*SyncContext, er
 
 	sqlDB.SetMaxOpenConns(24)
 	sqlDB.SetMaxIdleConns(24)
-	sqlDB.SetConnMaxLifetime(time.Hour)
+	sqlDB.SetConnMaxLifetime(time.Hour) 
 
 	if err := RunMigrations(sqlDB); err != nil {
 		sqlDB.Close()

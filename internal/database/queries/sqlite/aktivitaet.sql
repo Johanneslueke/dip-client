@@ -5,6 +5,9 @@ SELECT
 FROM aktivitaet a
 WHERE a.id = ?;
 
+-- name: GetLatestAktivitaetDatum :one
+SELECT MIN(datum) as datum FROM aktivitaet;
+
 -- name: GetAktivitaetWithDeskriptor :many
 SELECT 
     a.id,

@@ -3,92 +3,35 @@ package main
 import (
 	"context"
 	"database/sql"
-	"flag"
-	"fmt"
 	"log"
-	"os"
 	"time"
 
 	db "github.com/Johanneslueke/dip-client/internal/database/gen/sqlite"
 	client "github.com/Johanneslueke/dip-client/internal/gen"
 	"github.com/Johanneslueke/dip-client/internal/utility"
-	dipclient "github.com/Johanneslueke/dip-client/pkg/dip-client"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 	_ "modernc.org/sqlite"
 )
 
 
 
-
-
 func main() {
-	var (
-		baseURL       = flag.String("url", "https://search.dip.bundestag.de/api/v1", "API base URL")
-		apiKey        = flag.String("key", "", "API key")
-		dbPath        = flag.String("db", "dip.db", "SQLite database path")
-		limit         = flag.Int("limit", 0, "Maximum number of vorgänge to fetch (0 = all)")
-		checkpointDir = flag.String("checkpoint-dir", ".checkpoints", "Directory to store checkpoints")
-		failedDir     = flag.String("failed-dir", ".failed", "Directory to store failed record IDs")
-		resume        = flag.Bool("resume", false, "Resume from last checkpoint")
-		end           = flag.String("end", "", "End date for sync (YYYY-MM-DD)")
-	)
-	flag.Parse()
+	// Parse configuration
+	config := utility.ParseSyncFlags("vorgaenge")
 
-	if *apiKey == "" {
-		*apiKey = os.Getenv("DIP_API_KEY")
-	}
-
-	if *apiKey == "" {
-		log.Fatal("API key required (use -key flag or DIP_API_KEY environment variable)")
-	}
-
-	dipClient, err := dipclient.New(dipclient.Config{
-		BaseURL: *baseURL,
-		APIKey:  *apiKey,
-	})
+	// Create sync context (handles all setup)
+	syncCtx, err := utility.NewSyncContext(config, 240)
 	if err != nil {
-		log.Fatalf("Failed to create API client: %v", err)
+		log.Fatal(err)
 	}
+	defer syncCtx.Close()
 
-	sqlDB, err := sql.Open("sqlite", *dbPath)
-	if err != nil {
-		log.Fatalf("Failed to open database: %v", err)
-	}
-	defer sqlDB.Close()
+	// Load checkpoint if resuming
+	datumEnd, _ := syncCtx.CheckpointMgr.LoadIfResume()
 
-	sqlDB.SetMaxOpenConns(24)
-	sqlDB.SetMaxIdleConns(24)
-	sqlDB.SetConnMaxLifetime(time.Hour)
-
-	if err := utility.RunMigrations(sqlDB); err != nil {
-		log.Fatalf("Failed to run migrations: %v", err)
-	}
-
-	queries := db.New(sqlDB)
-	ctx := context.Background()
-	limiter := utility.NewRateLimiter(240, time.Minute) // 120 req/min = ~1 request every 0.5 seconds
-	progress := utility.NewProgressTracker(*limit)
-	failedTracker := utility.NewFailedRecordsTracker(*failedDir, "vorgaenge")
-
-	// Checkpoint and signal handling
-	var datumEnd *openapi_types.Date
-	var lastProcessedDate time.Time
-	interrupted := false
-
-	if *resume {
-		checkpoint, err := utility.LoadCheckpoint(*checkpointDir, "vorgaenge")
-		if err != nil {
-			log.Printf("Warning: Failed to load checkpoint: %v", err)
-		} else if checkpoint != nil {
-			lastProcessedDate = checkpoint.LastSyncDate
-			date := openapi_types.Date{Time: lastProcessedDate}
-			datumEnd = &date
-			log.Printf("Resuming from checkpoint: %s", lastProcessedDate.Format("2006-01-02"))
-		}
-	}
-
-	if *end != "" {
-		endTime, err := time.Parse("2006-01-02", *end)
+	// Parse end date if provided
+	if config.End != "" {
+		endTime, err := time.Parse("2006-01-02", config.End)
 		if err != nil {
 			log.Fatalf("Invalid end date format: %v", err)
 		}
@@ -96,113 +39,71 @@ func main() {
 		datumEnd = &date
 	}
 
-	signalHandler := utility.NewSignalHandler(
-		func() {
-			interrupted = true
-			if !lastProcessedDate.IsZero() {
-				if err := utility.SaveCheckpoint(*checkpointDir, "vorgaenge", lastProcessedDate); err != nil {
-					log.Printf("Error saving checkpoint: %v", err)
-				} else {
-					log.Printf("Checkpoint saved at %s", lastProcessedDate.Format("2006-01-02"))
-				}
+	// Run sync loop
+	err = syncCtx.SyncLoop(
+		// Fetch batch function
+		func(ctx context.Context, cursor *string) (*utility.BatchResponse, error) {
+			params := &client.GetVorgangListParams{
+				Cursor:    cursor,
+				FDatumEnd: datumEnd,
 			}
+
+			resp, err := syncCtx.Client.GetVorgangList(ctx, params)
+			if err != nil {
+				return nil, err
+			}
+
+			return &utility.BatchResponse{
+				Documents:    resp.Documents,
+				Cursor:       resp.Cursor,
+				NumFound:     int(resp.NumFound),
+				DocumentsLen: len(resp.Documents),
+			}, nil
 		},
-		nil,
+		// Store item function
+		storeVorgang,
+		// Update checkpoint date function
+		updateVorgangDate,
+		// Extract items function
+		func(docs interface{}) []interface{} {
+			vorgaenge := docs.([]client.Vorgang)
+			items := make([]interface{}, len(vorgaenge))
+			for i, v := range vorgaenge {
+				items[i] = v
+			}
+			return items
+		},
 	)
-	defer signalHandler.Stop()
 
-	var cursor *string
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	log.Printf("Starting to fetch vorgänge from API...")
+	// Finalize (handles all cleanup and logging)
+	syncCtx.Finalize()
+}
 
-	for {
-		// Check if interrupted
-		if signalHandler.IsInterrupted() || interrupted {
-			fmt.Println() // New line after progress updates
-			log.Printf("Interrupted after processing %d vorgänge", progress.Total)
-			return
-		}
-
-		if err := limiter.Wait(ctx); err != nil {
-			log.Fatalf("Rate limiter error: %v", err)
-		}
-
-		params := &client.GetVorgangListParams{
-			Cursor:    cursor,
-			FDatumEnd: datumEnd,
-		}
-
-		resp, err := dipClient.GetVorgangList(ctx, params)
+func updateVorgangDate(ctx context.Context, q *db.Queries, item interface{}, checkpointMgr *utility.CheckpointManager) {
+	vorgang := item.(client.Vorgang)
+	if vorgang.Datum != nil && !vorgang.Datum.Time.IsZero() {
+		datum, err := q.GetLatestVorgangDatum(ctx)
 		if err != nil {
-			log.Fatalf("Failed to fetch vorgänge: %v", err)
-		}
-
-		if len(resp.Documents) == 0 {
-			break
-		}
-
-		progress.Total += len(resp.Documents)
-		progress.PrintProgress(progress.Total, int(resp.NumFound))
-
-		for _, vorgang := range resp.Documents {
-			storeVorgang(ctx, queries, vorgang, failedTracker)
-
-			// Track the last processed date for checkpoint
-			if vorgang.Datum.Time.After(lastProcessedDate) {
-				datum, err :=  queries.GetLatestVorgangDatum(ctx)
-				if err != nil {
-					log.Printf("Warning: Failed to get latest vorgang datum: %v", err)
-					lastProcessedDate = vorgang.Datum.Time
-				} else if t, ok := datum.(string); ok {
-					lastProcessedDate, _ = time.Parse("2006-01-02", t)
-				} else {
-					log.Printf("Warning: Failed to cast datum to time.Time %v, using vorgang.Datum.Time", datum)
-					lastProcessedDate = vorgang.Datum.Time
-				}
+			log.Printf("Warning: Failed to get latest vorgang datum: %v", err)
+			checkpointMgr.UpdateDate(vorgang.Datum.Time)
+		} else if t, ok := datum.(string); ok {
+			if lastProcessedDate, err := time.Parse("2006-01-02", t); err == nil {
+				checkpointMgr.UpdateDate(lastProcessedDate)
 			}
-
-			progress.Increment()
-
-			if *limit > 0 && progress.Total >= *limit {
-				fmt.Println() // New line before final message
-				log.Printf("Reached limit of %d vorgänge", *limit)
-				goto done
-			}
-		}
-
-		if resp.Cursor == "" {
-			break
-		}
-		cursor = &resp.Cursor
-	}
-
-done:
-	fmt.Println() // New line after progress updates
-	elapsed, rate := progress.GetStats()
-	log.Printf("Successfully stored %d vorgänge in database %s (%.1f/sec, took %s)",
-		progress.Total, *dbPath, rate, elapsed.Round(time.Second))
-
-	// Save failed records if any
-	if failedTracker.Count() > 0 {
-		if err := failedTracker.Save(); err != nil {
-			log.Printf("Warning: Failed to save failed records: %v", err)
 		} else {
-			log.Printf("⚠️  %d records failed due to DB locks, saved to %s/.failed/vorgaenge.failed.json", failedTracker.Count(), *failedDir)
+			checkpointMgr.UpdateDate(vorgang.Datum.Time)
 		}
 	}
-
-	// Delete checkpoint on successful completion
-	if !interrupted && *resume {
-		if err := utility.DeleteCheckpoint(*checkpointDir, "vorgaenge"); err != nil {
-			log.Printf("Warning: Failed to delete checkpoint: %v", err)
-		}
-	}
-
 }
 
 
 
-func storeVorgang(ctx context.Context, q *db.Queries, vorgang client.Vorgang, failedTracker *utility.FailedRecordsTracker) {
+func storeVorgang(ctx context.Context, q *db.Queries, item interface{}, failedTracker *utility.FailedRecordsTracker) {
+	vorgang := item.(client.Vorgang)
 	existing, err := q.GetVorgang(ctx, vorgang.Id)
 	if err != nil && err != sql.ErrNoRows {
 		failedTracker.RecordIfDBLocked(vorgang.Id, "GetVorgang", err)
@@ -306,4 +207,72 @@ func storeVorgang(ctx context.Context, q *db.Queries, vorgang client.Vorgang, fa
 			}
 		}
 	}
+
+	if vorgang.Verkuendung != nil {
+		for _, verk := range *vorgang.Verkuendung {
+			if _, err := q.CreateVerkuendung(ctx, db.CreateVerkuendungParams{
+				VorgangID: vorgang.Id,
+				Ausfertigungsdatum: verk.Ausfertigungsdatum.UTC().String(),
+				Verkuendungsdatum:  verk.Verkuendungsdatum.UTC().String(),
+				Fundstelle:        verk.Fundstelle,
+				Einleitungstext: verk.Einleitungstext,
+				Jahrgang: verk.Jahrgang,
+				Seite: verk.Seite,
+				Heftnummer: ptrToNullString(verk.Heftnummer),
+				PdfUrl: ptrToNullString(verk.PdfUrl),
+				RubrikNr: ptrToNullString(verk.RubrikNr),
+				Titel: ptrToNullString(verk.Titel),
+				VerkuendungsblattBezeichnung: ptrToNullString(verk.VerkuendungsblattBezeichnung),
+				VerkuendungsblattKuerzel: ptrToNullString(verk.VerkuendungsblattKuerzel),
+				
+			}); err != nil {
+				failedTracker.RecordIfDBLocked(vorgang.Id, "CreateVorgangVerkuendung", err)
+				log.Printf("Warning: Failed to store verkuendung for vorgang %s: %v", vorgang.Id, err)
+			}
+		}
+	}
+
+	if vorgang.Inkrafttreten != nil {
+		for _, ink := range *vorgang.Inkrafttreten {
+			if _, err := q.CreateInkrafttreten(ctx, db.CreateInkrafttretenParams{
+				VorgangID: vorgang.Id,
+				Datum: ink.Datum.UTC().String(),
+				Erlaeuterung: ptrToNullString(ink.Erlaeuterung),
+			}); err != nil {
+				failedTracker.RecordIfDBLocked(vorgang.Id, "CreateVorgangInkrafttreten", err)
+				log.Printf("Warning: Failed to store inkrafttreten for vorgang %s: %v", vorgang.Id, err)
+			}
+		}
+	}
+
+	if vorgang.Zustimmungsbeduerftigkeit != nil {
+		for _, zust := range *vorgang.Zustimmungsbeduerftigkeit {
+			if  err := q.CreateVorgangZustimmungsbeduerftigkeit(ctx, db.CreateVorgangZustimmungsbeduerftigkeitParams{
+				VorgangID: vorgang.Id,
+				Zustimmungsbeduerftigkeit: zust,
+				
+			}); err != nil {
+				failedTracker.RecordIfDBLocked(vorgang.Id, "CreateVorgangZustimmungsbeduerftigkeit", err)
+				log.Printf("Warning: Failed to store zustimmungsbeduerftigkeit for vorgang %s: %v", vorgang.Id, err)
+			}
+		}
+	}
+
+	if vorgang.VorgangVerlinkung != nil {
+		for _, verlinkung := range *vorgang.VorgangVerlinkung {
+			if _, err := q.CreateVorgangVerlinkung(ctx, db.CreateVorgangVerlinkungParams{
+				SourceVorgangID:        vorgang.Id,
+				TargetVorgangID:        verlinkung.Verweisung, 
+				Gesta: ptrToNullString(vorgang.Gesta), 
+				Wahlperiode: int64(vorgang.Wahlperiode),
+				Titel: "",
+
+				
+			}); err != nil {
+				failedTracker.RecordIfDBLocked(vorgang.Id, "CreateVorgangVerlinkung", err)
+				log.Printf("Warning: Failed to store vorgang verlinkung for vorgang %s: %v", vorgang.Id, err)
+			}
+		}
+	}
+  
 }

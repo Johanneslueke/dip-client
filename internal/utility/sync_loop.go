@@ -43,9 +43,9 @@ func (sc *SyncContext) SyncLoop(
 		}
 
 		// Rate limiting
-		if err := sc.Limiter.Wait(sc.ctx); err != nil {
-			return fmt.Errorf("rate limiter error: %w", err)
-		}
+		// if err := sc.Limiter.Wait(sc.ctx); err != nil {
+		// 	return fmt.Errorf("rate limiter error: %w", err)
+		// }
 
 		// Fetch batch
 		resp, err := fetchBatch(sc.ctx, cursor)

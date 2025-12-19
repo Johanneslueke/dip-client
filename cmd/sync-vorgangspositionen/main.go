@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	db "github.com/Johanneslueke/dip-client/internal/database/gen/sqlite"
@@ -27,6 +29,8 @@ func main() {
 		failedDir     = flag.String("failed-dir", ".failed", "Directory to store failed record IDs")
 		resume        = flag.Bool("resume", false, "Resume from last checkpoint")
 		end           = flag.String("end", "", "End date for sync (YYYY-MM-DD)")
+		wahlperiode   = flag.String("wahlperiode", "", "Filter by Wahlperiode numbers (comma-separated, e.g. '19,20' or empty = no filter)")
+		vorgangID     = flag.Int("vorgang-id", 0, "Filter by specific Vorgang ID (0 = no filter)")
 	)
 	flag.Parse()
 
@@ -62,7 +66,7 @@ func main() {
 
 	queries := db.New(sqlDB)
 	ctx := context.Background()
-	limiter := utility.NewRateLimiter(120, time.Minute)
+	//limiter := utility.NewRateLimiter(1, time.Minute)
 	progress := utility.NewProgressTracker(*limit)
 	failedTracker := utility.NewFailedRecordsTracker(*failedDir, "vorgangspositionen")
 
@@ -109,7 +113,22 @@ func main() {
 
 	var cursor *string
 
-	log.Printf("Starting to fetch vorgangspositionen from API...")
+	// Log active filters
+	filters := []string{}
+	if datumEnd != nil {
+		filters = append(filters, fmt.Sprintf("datum-end=%s", datumEnd.Time.Format("2006-01-02")))
+	}
+	if *wahlperiode != "" {
+		filters = append(filters, fmt.Sprintf("wahlperiode=%s", *wahlperiode))
+	}
+	if *vorgangID > 0 {
+		filters = append(filters, fmt.Sprintf("vorgang-id=%d", *vorgangID))
+	}
+	if len(filters) > 0 {
+		log.Printf("Starting to fetch vorgangspositionen from API with filters: %s", strings.Join(filters, ", "))
+	} else {
+		log.Printf("Starting to fetch vorgangspositionen from API (no filters)...")
+	}
 
 	for {
 		// Check if interrupted
@@ -119,13 +138,42 @@ func main() {
 			return
 		}
 
-		if err := limiter.Wait(ctx); err != nil {
-			log.Fatalf("Rate limiter error: %v", err)
-		}
+		// if err := limiter.Wait(ctx); err != nil {
+		// 	log.Fatalf("Rate limiter error: %v", err)
+		// }
 
 		params := &client.GetVorgangspositionListParams{
 			Cursor:    cursor,
 			FDatumEnd: datumEnd,
+		}
+
+		// Add optional filters
+		if *wahlperiode != "" {
+			//split and convert to []WahlperiodeFilter if slice only contains one element use FWahlperiode if it contains multiple use FWahlperiodes
+			wpStrings := strings.Split(*wahlperiode, ",")
+			if len(wpStrings) == 1 {
+				 // parse single int
+				wpInt, err := strconv.Atoi(wpStrings[0])
+				if err != nil {
+					log.Fatalf("Invalid wahlperiode value: %v", err)
+				}
+				wpFilter := dipclient.WahlperiodeFilter(wpInt)
+				params.FWahlperiode = &wpFilter
+			} else {
+				var wpFilters []dipclient.WahlperiodeFilter
+				for _, wpStr := range wpStrings {
+					wpInt, err := strconv.Atoi(wpStr)
+					if err != nil {
+						log.Fatalf("Invalid wahlperiode value: %v", err)
+					}
+					wpFilters = append(wpFilters, dipclient.WahlperiodeFilter(wpInt))
+				}
+				params.FWahlperiodes = &wpFilters
+			}
+		}
+		
+		if *vorgangID > 0 {
+			params.FId = vorgangID
 		}
 
 		resp, err := dipClient.GetVorgangspositionList(ctx, params)
@@ -144,9 +192,21 @@ func main() {
 			storeVorgangsposition(ctx, queries, vorgangsposition, failedTracker)
 
 			// Track the last processed date for checkpoint
-			if vorgangsposition.Aktualisiert.After(lastProcessedDate) {
-				lastProcessedDate = vorgangsposition.Aktualisiert
-			}
+			if vorgangsposition.Datum.After(lastProcessedDate) {
+				datum, err := queries.GetLatestVorgangspositionDatum(ctx)
+				if err != nil {
+					log.Printf("Warning: Failed to get latest vorgangsposition datum: %v", err)
+					lastProcessedDate = vorgangsposition.Aktualisiert
+				} else if t, ok := datum.(string); ok {
+					if parsedDate, err := time.Parse("2006-01-02", t); err == nil {
+						lastProcessedDate = parsedDate
+					} else {
+						lastProcessedDate = vorgangsposition.Aktualisiert
+					}
+				} else {
+					lastProcessedDate = vorgangsposition.Aktualisiert
+				}
+			}  
 
 			progress.Increment()
 

@@ -195,6 +195,17 @@ func (q *Queries) DeletePlenarprotokoll(ctx context.Context, id string) error {
 	return err
 }
 
+const getLatestPlenarprotokollDatum = `-- name: GetLatestPlenarprotokollDatum :one
+SELECT MIN(datum) as datum FROM plenarprotokoll
+`
+
+func (q *Queries) GetLatestPlenarprotokollDatum(ctx context.Context) (interface{}, error) {
+	row := q.db.QueryRowContext(ctx, getLatestPlenarprotokollDatum)
+	var datum interface{}
+	err := row.Scan(&datum)
+	return datum, err
+}
+
 const getPlenarprotokoll = `-- name: GetPlenarprotokoll :one
 SELECT id, titel, dokumentnummer, dokumentart, typ, herausgeber, datum, aktualisiert, pdf_hash, sitzungsbemerkung, vorgangsbezug_anzahl, wahlperiode, fundstelle_dokumentnummer, fundstelle_datum, fundstelle_dokumentart, fundstelle_herausgeber, fundstelle_id, fundstelle_anfangsseite, fundstelle_endseite, fundstelle_anfangsquadrant, fundstelle_endquadrant, fundstelle_seite, fundstelle_pdf_url, fundstelle_top, fundstelle_top_zusatz, created_at, updated_at
 FROM plenarprotokoll

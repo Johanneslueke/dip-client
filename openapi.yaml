@@ -1939,7 +1939,7 @@ components:
       description:
         "Jeder Vorgangsschritt ist entweder dem Bundestag (BT), dem Bundesrat\
         \ (BR), der Bundesversammlung (BV) oder der Europakammer (EK) zugeordnet.\
-        \ Ãœber die Zuordnung lassen sich bspw. Rechtsverordnungen herausfiltern, an\
+        \ über die Zuordnung lassen sich bspw. Rechtsverordnungen herausfiltern, an\
         \ denen der Bundestag beteiligt / nicht beteiligt war."
       type: "string"
       enum:

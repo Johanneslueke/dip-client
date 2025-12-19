@@ -1031,6 +1031,7 @@ type GetAktivitaetListParams struct {
 	// Selektiert alle EntitÃ¤ten, die der angegebenen Wahlperiode zugeordnet sind.
 	// Kann wiederholt werden, um mehrere Wahlperioden zu selektieren.
 	FWahlperiode *WahlperiodeFilter `form:"f.wahlperiode,omitempty" json:"f.wahlperiode,omitempty"`
+	FWahlperiodes *[]WahlperiodeFilter `form:"f.wahlperiodes,omitempty" json:"f.wahlperiodes,omitempty"`
 
 	// FDrucksache ID einer verknÃ¼pften Drucksache
 	//
@@ -1125,6 +1126,7 @@ type GetDrucksacheListParams struct {
 	// Selektiert alle EntitÃ¤ten, die der angegebenen Wahlperiode zugeordnet sind.
 	// Kann wiederholt werden, um mehrere Wahlperioden zu selektieren.
 	FWahlperiode *WahlperiodeFilter `form:"f.wahlperiode,omitempty" json:"f.wahlperiode,omitempty"`
+	FWahlperiodes *[]WahlperiodeFilter `form:"f.wahlperiodes,omitempty" json:"f.wahlperiodes,omitempty"`
 
 	// FId ID der EntitÃ¤t
 	//
@@ -1553,6 +1555,7 @@ type GetVorgangspositionListParams struct {
 	// Selektiert alle EntitÃ¤ten, die der angegebenen Wahlperiode zugeordnet sind.
 	// Kann wiederholt werden, um mehrere Wahlperioden zu selektieren.
 	FWahlperiode *WahlperiodeFilter `form:"f.wahlperiode,omitempty" json:"f.wahlperiode,omitempty"`
+	FWahlperiodes *[]WahlperiodeFilter `form:"f.wahlperiodes,omitempty" json:"f.wahlperiodes,omitempty"`
 
 	// FDrucksache ID einer verknÃ¼pften Drucksache
 	//

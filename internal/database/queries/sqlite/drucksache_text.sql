@@ -6,6 +6,9 @@ FROM drucksache d
 LEFT JOIN drucksache_text dt ON d.id = dt.id
 WHERE d.id = ?;
 
+-- name: GetLatestDrucksacheTextDatum :one
+SELECT MIN(datum) as datum FROM drucksache_text;
+
 -- name: ListDrucksacheTexte :many
 SELECT 
     d.*,

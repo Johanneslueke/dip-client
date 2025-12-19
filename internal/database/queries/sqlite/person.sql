@@ -3,6 +3,9 @@ SELECT *
 FROM person
 WHERE id = ?;
 
+-- name: GetLatestPersonDatum :one
+SELECT MIN(datum) as datum FROM person;
+
 -- name: GetPersonWithRoles :many
 SELECT 
     p.*,

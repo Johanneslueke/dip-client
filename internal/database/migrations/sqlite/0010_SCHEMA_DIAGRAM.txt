@@ -1,0 +1,220 @@
+# MdB Stammdaten Database Schema - Entity Relationship Diagram
+
+## Table Relationships
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          MdB STAMMDATEN SCHEMA                              │
+│                  (Bundestag Member Master Data)                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────┐
+│ mdb_stammdaten_version   │  [Tracks XML imports]
+├──────────────────────────┤
+│ PK id                    │
+│    version               │
+│    import_date           │
+│    source_file           │
+└──────────────────────────┘
+
+
+┌──────────────────────────┐
+│     mdb_person           │  [Main entity: ~4,613 records]
+├──────────────────────────┤
+│ PK id (8-digit)          │────┐
+│    created_at            │    │
+│    updated_at            │    │
+└──────────────────────────┘    │
+                                │
+                ┌───────────────┴───────────────┬─────────────────────┐
+                │                               │                     │
+                ▼                               ▼                     ▼
+┌────────────────────────────┐  ┌───────────────────────────┐  ┌─────────────────────────────┐
+│      mdb_name              │  │   mdb_biographical        │  │ mdb_wahlperiode_membership  │
+│   [Name history: ~4,900]   │  │   [Biography: ~4,613]     │  │   [WP memberships: ~13,045] │
+├────────────────────────────┤  ├───────────────────────────┤  ├─────────────────────────────┤
+│ PK id                      │  │ PK id                     │  │ PK id                       │
+│ FK mdb_id ───────────────┐ │  │ FK mdb_id (UNIQUE) ──────┐│  │ FK mdb_id ───────────────┐ │
+│    nachname              │ │  │    geburtsdatum         ││  │    wp (wahlperiode)      │ │
+│    vorname               │ │  │    geburtsort           ││  │    mdbwp_von (start)     │ │
+│    ortszusatz            │ │  │    geburtsland          ││  │    mdbwp_bis (end)       │ │
+│    adel                  │ │  │    sterbedatum          ││  │    wkr_nummer (district) │ │
+│    praefix (von, van)    │ │  │    geschlecht           ││  │    wkr_name              │ │
+│    anrede_titel (Dr.)    │ │  │    familienstand        ││  │    wkr_land (state)      │ │
+│    akad_titel (Prof.)    │ │  │    religion             ││  │    liste                 │ │
+│    historie_von (start)  │ │  │    beruf                ││  │    mandatsart            │ │
+│    historie_bis (end)    │ │  │    partei_kurz          ││  │                          │ │
+└────────────────────────────┘  │    vita_kurz            ││  └──────────────┬───────────┘ │
+                                │    veroeffentl...       ││                 │             │
+    [1:N relationship]          └───────────────────────────┘│                 │             │
+    Multiple names per person   [1:1 relationship]          │                 │             │
+    Tracks name changes         One bio per person          │                 │             │
+    (e.g., marriage)                                        │                 │             │
+                                                            │                 ▼             │
+                                                            │  ┌─────────────────────────────┴──┐
+                                                            │  │ mdb_institution_membership      │
+                                                            │  │ [Institutions: ~16,653]         │
+                                                            │  ├─────────────────────────────────┤
+                                                            │  │ PK id                           │
+                                                            │  │ FK mdb_wahlperiode_membership_id│
+                                                            │  │    insart_lang (type)           │
+                                                            │  │    ins_lang (name)              │
+                                                            │  │    mdbins_von (start)           │
+                                                            │  │    mdbins_bis (end)             │
+                                                            │  │    fkt_lang (function)          │
+                                                            │  │    fktins_von (function start)  │
+                                                            │  │    fktins_bis (function end)    │
+                                                            │  └─────────────────────────────────┘
+                                                            │
+                                                            │  [1:N relationship]
+                                                            │  Multiple institutions per WP
+                                                            │  (fraktion, ausschuss, etc.)
+                                                            └──────────────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              VIEWS (4)                                      │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────┐  ┌──────────────────────────────┐
+│  mdb_current_members         │  │  mdb_full_names              │
+│  [Active MdBs in latest WP]  │  │  [Names with display format] │
+├──────────────────────────────┤  ├──────────────────────────────┤
+│  mdb_id                      │  │  mdb_id, name_id             │
+│  nachname, vorname           │  │  display_name (formatted)    │
+│  partei_kurz, geschlecht     │  │  full_nachname (with prefix) │
+│  wahlperiode, mandatsart     │  │  all name components         │
+│  wkr_name, wkr_land          │  │  is_current (flag)           │
+└──────────────────────────────┘  └──────────────────────────────┘
+
+┌──────────────────────────────┐  ┌──────────────────────────────┐
+│  mdb_career_summary          │  │  mdb_fraktion_summary        │
+│  [Statistical career data]   │  │  [Fraktion sizes by WP]      │
+├──────────────────────────────┤  ├──────────────────────────────┤
+│  mdb_id, name, party         │  │  fraktion, wahlperiode       │
+│  anzahl_wahlperioden         │  │  anzahl_mitglieder           │
+│  erste/letzte wahlperiode    │  │  direktmandate               │
+│  mandat_beginn/ende          │  │  listenmandate               │
+│  anzahl_fraktionen           │  └──────────────────────────────┘
+└──────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                            KEY FEATURES                                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+✅ CASCADE DELETES:
+   mdb_person → mdb_name, mdb_biographical, mdb_wahlperiode_membership
+   mdb_wahlperiode_membership → mdb_institution_membership
+
+✅ UNIQUE CONSTRAINTS:
+   - mdb_biographical.mdb_id (1:1 with person)
+   - (mdb_wahlperiode_membership.mdb_id, wp) - one per person per WP
+
+✅ INDEXES (15 total):
+   - All foreign keys indexed
+   - nachname, vorname (for searches)
+   - wp, partei_kurz (for filtering)
+   - Temporal fields (historie_von, mdbwp_von, etc.)
+
+✅ NULLABLE FIELDS:
+   - All biographical fields (optional per DTD)
+   - historie_bis (NULL = current name)
+   - mdbwp_bis (NULL = ongoing membership)
+   - ortszusatz, adel, praefix (not everyone has these)
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         DATA FLOW EXAMPLE                                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+XML Source: MDB_STAMMDATEN.XML
+│
+├─ <DOCUMENT>
+│   ├─ <VERSION>1759235089</VERSION>
+│   └─ <MDB>                                  ──→ mdb_person (id)
+│       ├─ <ID>11000001</ID>                         │
+│       │                                             ├─→ mdb_name (nachname, vorname, ...)
+│       ├─ <NAMEN>                                    │
+│       │   └─ <NAME>                                 │
+│       │       ├─ <NACHNAME>Abelein</NACHNAME>       │
+│       │       ├─ <VORNAME>Manfred</VORNAME>         │
+│       │       └─ ...                                │
+│       │                                             ├─→ mdb_biographical (geburtsdatum, ...)
+│       ├─ <BIOGRAFISCHE_ANGABEN>                     │
+│       │   ├─ <GEBURTSDATUM>20.10.1930</...>        │
+│       │   ├─ <GESCHLECHT>männlich</...>            │
+│       │   └─ ...                                   │
+│       │                                             └─→ mdb_wahlperiode_membership (wp, ...)
+│       └─ <WAHLPERIODEN>                                    │
+│           └─ <WAHLPERIODE>                                 └─→ mdb_institution_membership
+│               ├─ <WP>5</WP>
+│               ├─ <MDBWP_VON>19.10.1965</...>
+│               └─ <INSTITUTIONEN>
+│                   └─ <INSTITUTION>
+│                       └─ <INS_LANG>CDU/CSU</...>
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      EXAMPLE QUERIES                                        │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+-- Find person by name
+SELECT * FROM mdb_full_names 
+WHERE nachname = 'Merkel' AND vorname = 'Angela' AND is_current = 1;
+
+-- Show career history
+SELECT wp, mdbwp_von, mdbwp_bis, wkr_name, mandatsart
+FROM mdb_wahlperiode_membership
+WHERE mdb_id = '11004809'  -- Merkel's ID
+ORDER BY wp;
+
+-- Fraktion switchers in WP19
+SELECT mp.id, mn.nachname, 
+       GROUP_CONCAT(mim.ins_lang, ' → ') as fraktionen
+FROM mdb_person mp
+JOIN mdb_name mn ON mp.id = mn.mdb_id AND mn.historie_bis IS NULL
+JOIN mdb_wahlperiode_membership mwm ON mp.id = mwm.mdb_id AND mwm.wp = 19
+JOIN mdb_institution_membership mim ON mwm.id = mim.mdb_wahlperiode_membership_id
+GROUP BY mp.id HAVING COUNT(DISTINCT mim.ins_lang) > 1;
+
+-- Women in Bundestag over time
+SELECT mwm.wp, COUNT(DISTINCT mp.id) as anzahl_frauen
+FROM mdb_person mp
+JOIN mdb_biographical mb ON mp.id = mb.mdb_id AND mb.geschlecht = 'weiblich'
+JOIN mdb_wahlperiode_membership mwm ON mp.id = mwm.mdb_id
+GROUP BY mwm.wp ORDER BY mwm.wp;
+
+-- Longest serving members
+SELECT nachname, vorname, anzahl_wahlperioden, 
+       erste_wahlperiode, letzte_wahlperiode,
+       CAST((julianday(mandat_ende) - julianday(mandat_beginn)) / 365.25 AS INTEGER) as jahre
+FROM mdb_career_summary
+ORDER BY anzahl_wahlperioden DESC, jahre DESC
+LIMIT 20;
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    INTEGRATION POTENTIAL                                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Existing Tables          New Tables              Combined Analysis
+─────────────────        ────────────            ─────────────────
+┌──────────┐            ┌────────────┐          
+│ person   │────link────│ mdb_person │          Person Activities
+│ (DIP API)│            │ (Stammdaten)│          + Biography
+└──────────┘            └────────────┘          = Complete Profile
+     │                         │
+     │ aktivitäten             │ wahlperiode
+     │ vorgänge                │ fraktion
+     │ questions               │ mandate type
+     │                         │ electoral district
+     └─────────────────────────┘
+              │
+              ▼
+     ┌─────────────────────┐
+     │  ENRICHED ANALYSIS  │
+     │  - Activity + Bio   │
+     │  - Questions + Age  │
+     │  - Career + Party   │
+     └─────────────────────┘

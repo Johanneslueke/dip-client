@@ -185,6 +185,17 @@ func (q *Queries) GetDrucksacheText(ctx context.Context, id string) (GetDrucksac
 	return i, err
 }
 
+const getLatestDrucksacheTextDatum = `-- name: GetLatestDrucksacheTextDatum :one
+SELECT MIN(datum) as datum FROM drucksache_text
+`
+
+func (q *Queries) GetLatestDrucksacheTextDatum(ctx context.Context) (interface{}, error) {
+	row := q.db.QueryRowContext(ctx, getLatestDrucksacheTextDatum)
+	var datum interface{}
+	err := row.Scan(&datum)
+	return datum, err
+}
+
 const listDrucksacheTexte = `-- name: ListDrucksacheTexte :many
 SELECT 
     d.id, d.titel, d.dokumentnummer, d.dokumentart, d.typ, d.drucksachetyp, d.herausgeber, d.datum, d.aktualisiert, d.anlagen, d.autoren_anzahl, d.vorgangsbezug_anzahl, d.pdf_hash, d.wahlperiode, d.fundstelle_dokumentnummer, d.fundstelle_datum, d.fundstelle_dokumentart, d.fundstelle_herausgeber, d.fundstelle_id, d.fundstelle_drucksachetyp, d.fundstelle_anlagen, d.fundstelle_anfangsseite, d.fundstelle_endseite, d.fundstelle_anfangsquadrant, d.fundstelle_endquadrant, d.fundstelle_seite, d.fundstelle_pdf_url, d.fundstelle_top, d.fundstelle_top_zusatz, d.fundstelle_frage_nummer, d.fundstelle_verteildatum, d.created_at, d.updated_at,

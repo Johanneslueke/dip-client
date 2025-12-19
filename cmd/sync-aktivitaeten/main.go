@@ -3,10 +3,9 @@ package main
 import (
 	"context"
 	"database/sql"
-	"flag"
-	"fmt"
 	"log"
-	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	db "github.com/Johanneslueke/dip-client/internal/database/gen/sqlite"
@@ -18,73 +17,22 @@ import (
 )
 
 func main() {
-	var (
-		baseURL       = flag.String("url", "https://search.dip.bundestag.de/api/v1", "API base URL")
-		apiKey        = flag.String("key", "", "API key")
-		dbPath        = flag.String("db", "dip.db", "SQLite database path")
-		limit         = flag.Int("limit", 0, "Maximum number of aktivitäten to fetch (0 = all)")
-		checkpointDir = flag.String("checkpoint-dir", ".checkpoints", "Directory to store checkpoints")
-		failedDir     = flag.String("failed-dir", ".failed", "Directory to store failed record IDs")
-		resume        = flag.Bool("resume", false, "Resume from last checkpoint")
-		end           = flag.String("end", "", "End date for sync (YYYY-MM-DD)")
-	)
-	flag.Parse()
+	// Parse configuration
+	config := utility.ParseSyncFlags("aktivitaeten")
 
-	if *apiKey == "" {
-		*apiKey = os.Getenv("DIP_API_KEY")
-	}
-
-	if *apiKey == "" {
-		log.Fatal("API key required (use -key flag or DIP_API_KEY environment variable)")
-	}
-
-	dipClient, err := dipclient.New(dipclient.Config{
-		BaseURL: *baseURL,
-		APIKey:  *apiKey,
-	})
+	// Create sync context (handles all setup)
+	syncCtx, err := utility.NewSyncContext(config, 480)
 	if err != nil {
-		log.Fatalf("Failed to create API client: %v", err)
+		log.Fatal(err)
 	}
+	defer syncCtx.Close()
 
-	sqlDB, err := sql.Open("sqlite", *dbPath)
-	if err != nil {
-		log.Fatalf("Failed to open database: %v", err)
-	}
-	defer sqlDB.Close()
+	// Load checkpoint if resuming
+	datumEnd, _ := syncCtx.CheckpointMgr.LoadIfResume()
 
-	sqlDB.SetMaxOpenConns(24)
-	sqlDB.SetMaxIdleConns(24)
-	sqlDB.SetConnMaxLifetime(time.Hour)
-
-	if err := utility.RunMigrations(sqlDB); err != nil {
-		log.Fatalf("Failed to run migrations: %v", err)
-	}
-
-	queries := db.New(sqlDB)
-	ctx := context.Background()
-	limiter := utility.NewRateLimiter(23, time.Minute)
-	progress := utility.NewProgressTracker(*limit)
-	failedTracker := utility.NewFailedRecordsTracker(*failedDir, "aktivitaeten")
-
-	// Checkpoint and signal handling
-	var datumEnd *openapi_types.Date
-	var lastProcessedDate time.Time
-	interrupted := false
-
-	if *resume {
-		checkpoint, err := utility.LoadCheckpoint(*checkpointDir, "aktivitaeten")
-		if err != nil {
-			log.Printf("Warning: Failed to load checkpoint: %v", err)
-		} else if checkpoint != nil {
-			lastProcessedDate = checkpoint.LastSyncDate
-			date := openapi_types.Date{Time: lastProcessedDate}
-			datumEnd = &date
-			log.Printf("Resuming from checkpoint: %s", lastProcessedDate.Format("2006-01-02"))
-		}
-	}
-
-	if *end != "" {
-		endTime, err := time.Parse("2006-01-02", *end)
+	// Parse end date if provided
+	if config.End != "" {
+		endTime, err := time.Parse("2006-01-02", config.End)
 		if err != nil {
 			log.Fatalf("Invalid end date format: %v", err)
 		}
@@ -92,100 +40,99 @@ func main() {
 		datumEnd = &date
 	}
 
-	signalHandler := utility.NewSignalHandler(
-		func() {
-			interrupted = true
-			if !lastProcessedDate.IsZero() {
-				if err := utility.SaveCheckpoint(*checkpointDir, "aktivitaeten", lastProcessedDate); err != nil {
-					log.Printf("Error saving checkpoint: %v", err)
+	// Run sync loop
+	err = syncCtx.SyncLoop(
+		// Fetch batch function
+		func(ctx context.Context, cursor *string) (*utility.BatchResponse, error) {
+			params := &client.GetAktivitaetListParams{
+				Cursor:    cursor,
+				FDatumEnd: datumEnd,
+			}
+
+			// Add optional filters
+			if config.Wahlperiode != "" {
+				//split and convert to []WahlperiodeFilter if slice only contains one element use FWahlperiode if it contains multiple use FWahlperiodes
+				wpStrings := strings.Split(config.Wahlperiode, ",")
+				if len(wpStrings) == 1 {
+					// parse single int
+					wpInt, err := strconv.Atoi(wpStrings[0])
+					if err != nil {
+						log.Fatalf("Invalid wahlperiode value: %v", err)
+					}
+					wpFilter := dipclient.WahlperiodeFilter(wpInt)
+					params.FWahlperiode = &wpFilter
 				} else {
-					log.Printf("Checkpoint saved at %s", lastProcessedDate.Format("2006-01-02"))
+					var wpFilters []dipclient.WahlperiodeFilter
+					for _, wpStr := range wpStrings {
+						wpInt, err := strconv.Atoi(wpStr)
+						if err != nil {
+							log.Fatalf("Invalid wahlperiode value: %v", err)
+						}
+						wpFilters = append(wpFilters, dipclient.WahlperiodeFilter(wpInt))
+					}
+					params.FWahlperiodes = &wpFilters
 				}
 			}
+			if config.VorgangID > 0 {
+				params.FId = &config.VorgangID
+			}
+
+			resp, err := syncCtx.Client.GetAktivitaetList(ctx, params)
+			if err != nil {
+				return nil, err
+			}
+
+			return &utility.BatchResponse{
+				Documents:    resp.Documents,
+				Cursor:       resp.Cursor,
+				NumFound:     int(resp.NumFound),
+				DocumentsLen: len(resp.Documents),
+			}, nil
 		},
-		nil,
+		// Store item function
+		storeAktivitaet,
+		// Update checkpoint date function
+		updateAktivitaetDate,
+		// Extract items function
+		func(docs interface{}) []interface{} {
+			aktivitaeten := docs.([]client.Aktivitaet)
+			items := make([]interface{}, len(aktivitaeten))
+			for i, a := range aktivitaeten {
+				items[i] = a
+			}
+			return items
+		},
 	)
-	defer signalHandler.Stop()
 
-	var cursor *string
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	log.Printf("Starting to fetch aktivitäten from API...")
+	// Finalize (handles all cleanup and logging)
+	syncCtx.Finalize()
+}
 
-	for {
-		// Check if interrupted
-		if signalHandler.IsInterrupted() || interrupted {
-			fmt.Println() // New line after progress updates
-			log.Printf("Interrupted after processing %d aktivitäten", progress.Total)
-			return
-		}
-
-		if err := limiter.Wait(ctx); err != nil {
-			log.Fatalf("Rate limiter error: %v", err)
-		}
-
-		params := &client.GetAktivitaetListParams{
-			Cursor:    cursor,
-			FDatumEnd: datumEnd,
-		}
-
-		resp, err := dipClient.GetAktivitaetList(ctx, params)
+func updateAktivitaetDate(ctx context.Context, q *db.Queries, item interface{}, checkpointMgr *utility.CheckpointManager) {
+	aktivitaet := item.(client.Aktivitaet)
+	if !aktivitaet.Aktualisiert.IsZero() {
+		datum, err := q.GetLatestAktivitaetDatum(ctx)
 		if err != nil {
-			log.Fatalf("Failed to fetch aktivitäten: %v", err)
-		}
-
-		if len(resp.Documents) == 0 {
-			break
-		}
-
-		progress.PrintProgress(progress.Total+len(resp.Documents), int(resp.NumFound))
-
-		for _, aktivitaet := range resp.Documents {
-			storeAktivitaet(ctx, queries, aktivitaet, failedTracker)
-
-			// Track the last processed date for checkpoint
-			if aktivitaet.Aktualisiert.After(lastProcessedDate) {
-				lastProcessedDate = aktivitaet.Aktualisiert
+			log.Printf("Warning: Failed to get latest aktivitaet datum: %v", err)
+			checkpointMgr.UpdateDate(aktivitaet.Aktualisiert)
+		} else if t, ok := datum.(string); ok {
+			if lastProcessedDate, err := time.Parse("2006-01-02", t); err == nil {
+				checkpointMgr.UpdateDate(lastProcessedDate)
+			} else {
+				checkpointMgr.UpdateDate(aktivitaet.Aktualisiert)
 			}
-
-			progress.Increment()
-
-			if *limit > 0 && progress.Total >= *limit {
-				fmt.Println() // New line before final message
-				log.Printf("Reached limit of %d aktivitäten", *limit)
-				goto done
-			}
-		}
-
-		if resp.Cursor == "" {
-			break
-		}
-		cursor = &resp.Cursor
-	}
-
-done:
-	fmt.Println() // New line after progress updates
-	elapsed, rate := progress.GetStats()
-	log.Printf("Successfully stored %d aktivitäten in database %s (%.1f/sec, took %s)",
-		progress.Total, *dbPath, rate, elapsed.Round(time.Second))
-
-	// Save failed records if any
-	if failedTracker.Count() > 0 {
-		if err := failedTracker.Save(); err != nil {
-			log.Printf("Warning: Failed to save failed records: %v", err)
 		} else {
-			log.Printf("⚠️  %d records failed due to DB locks, saved to %s/aktivitaeten.failed.json", failedTracker.Count(), *failedDir)
-		}
-	}
-
-	// Delete checkpoint on successful completion
-	if !interrupted && *resume {
-		if err := utility.DeleteCheckpoint(*checkpointDir, "aktivitaeten"); err != nil {
-			log.Printf("Warning: Failed to delete checkpoint: %v", err)
+			checkpointMgr.UpdateDate(aktivitaet.Aktualisiert)
 		}
 	}
 }
 
-func storeAktivitaet(ctx context.Context, q *db.Queries, aktivitaet client.Aktivitaet, failedTracker *utility.FailedRecordsTracker) {
+func storeAktivitaet(ctx context.Context, q *db.Queries, item interface{}, failedTracker *utility.FailedRecordsTracker) {
+	aktivitaet := item.(client.Aktivitaet)
 	existing, err := q.GetAktivitaet(ctx, aktivitaet.Id)
 	if err != nil && err != sql.ErrNoRows {
 		failedTracker.RecordIfDBLocked(aktivitaet.Id, "GetAktivitaet", err)
@@ -260,6 +207,9 @@ func storeAktivitaet(ctx context.Context, q *db.Queries, aktivitaet client.Aktiv
 		FundstelleVerteildatum:    dateToNullString(fundstelle.Verteildatum),
 	}
 
+	var aktivitaetDb db.Aktivitaet
+	
+	
 	if existing.ID != "" {
 		updateParams := db.UpdateAktivitaetParams{
 			ID:                  aktivitaet.Id,
@@ -269,13 +219,15 @@ func storeAktivitaet(ctx context.Context, q *db.Queries, aktivitaet client.Aktiv
 			Abstract:            params.Abstract,
 			VorgangsbezugAnzahl: params.VorgangsbezugAnzahl,
 		}
-		if _, err := q.UpdateAktivitaet(ctx, updateParams); err != nil {
+		aktivitaetDb, err = q.UpdateAktivitaet(ctx, updateParams)
+		if err != nil {
 			failedTracker.RecordIfDBLocked(aktivitaet.Id, "UpdateAktivitaet", err)
 			log.Printf("Warning: Failed to update aktivitaet %s: %v", aktivitaet.Id, err)
 			return
 		}
 	} else {
-		if _, err := q.CreateAktivitaet(ctx, params); err != nil {
+		aktivitaetDb, err = q.CreateAktivitaet(ctx, params)
+		if err != nil {
 			failedTracker.RecordIfDBLocked(aktivitaet.Id, "CreateAktivitaet", err)
 			log.Printf("Warning: Failed to create aktivitaet %s: %v", aktivitaet.Id, err)
 			return
@@ -286,10 +238,10 @@ func storeAktivitaet(ctx context.Context, q *db.Queries, aktivitaet client.Aktiv
 	if aktivitaet.Deskriptor != nil {
 		for _, desk := range *aktivitaet.Deskriptor {
 			if _, err := q.CreateAktivitaetDeskriptor(ctx, db.CreateAktivitaetDeskriptorParams{
-				AktivitaetID: aktivitaet.Id,
+				AktivitaetID: aktivitaetDb.ID,
 				Name:         desk.Name,
 				Typ:          string(desk.Typ),
-			}); err != nil {
+			}); err != nil && err != sql.ErrNoRows {
 				failedTracker.RecordIfDBLocked(aktivitaet.Id, "CreateAktivitaetDeskriptor", err)
 				log.Printf("Warning: Failed to store deskriptor for aktivitaet %s: %v", aktivitaet.Id, err)
 			}

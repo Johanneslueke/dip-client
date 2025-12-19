@@ -407,6 +407,17 @@ func (q *Queries) DeleteVorgangsposition(ctx context.Context, id string) error {
 	return err
 }
 
+const getLatestVorgangspositionDatum = `-- name: GetLatestVorgangspositionDatum :one
+SELECT MIN(datum) as datum FROM vorgangsposition
+`
+
+func (q *Queries) GetLatestVorgangspositionDatum(ctx context.Context) (interface{}, error) {
+	row := q.db.QueryRowContext(ctx, getLatestVorgangspositionDatum)
+	var datum interface{}
+	err := row.Scan(&datum)
+	return datum, err
+}
+
 const getVorgangsposition = `-- name: GetVorgangsposition :one
 SELECT id, vorgang_id, titel, vorgangsposition, vorgangstyp, typ, dokumentart, datum, aktualisiert, abstract, fortsetzung, gang, nachtrag, aktivitaet_anzahl, kom, ratsdok, sek, zuordnung, fundstelle_dokumentnummer, fundstelle_datum, fundstelle_dokumentart, fundstelle_herausgeber, fundstelle_id, fundstelle_drucksachetyp, fundstelle_anlagen, fundstelle_anfangsseite, fundstelle_endseite, fundstelle_anfangsquadrant, fundstelle_endquadrant, fundstelle_seite, fundstelle_pdf_url, fundstelle_top, fundstelle_top_zusatz, fundstelle_frage_nummer, fundstelle_verteildatum, created_at, updated_at
 FROM vorgangsposition
