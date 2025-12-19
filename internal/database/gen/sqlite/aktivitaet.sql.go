@@ -69,13 +69,13 @@ INSERT INTO aktivitaet (
     fundstelle_herausgeber, fundstelle_id, fundstelle_drucksachetyp,
     fundstelle_anlagen, fundstelle_anfangsseite, fundstelle_endseite,
     fundstelle_anfangsquadrant, fundstelle_endquadrant, fundstelle_seite,
-    fundstelle_pdf_url, fundstelle_top, fundstelle_top_zusatz,
+    fundstelle_pdf_url, fundstelle_xml_url, fundstelle_top, fundstelle_top_zusatz,
     fundstelle_frage_nummer, fundstelle_verteildatum
 ) VALUES (
     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-    ?, ?, ?, ?, ?, ?, ?
-) RETURNING id, titel, aktivitaetsart, typ, dokumentart, datum, aktualisiert, abstract, vorgangsbezug_anzahl, wahlperiode, fundstelle_dokumentnummer, fundstelle_datum, fundstelle_dokumentart, fundstelle_herausgeber, fundstelle_id, fundstelle_drucksachetyp, fundstelle_anlagen, fundstelle_anfangsseite, fundstelle_endseite, fundstelle_anfangsquadrant, fundstelle_endquadrant, fundstelle_seite, fundstelle_pdf_url, fundstelle_top, fundstelle_top_zusatz, fundstelle_frage_nummer, fundstelle_verteildatum, created_at, updated_at
+    ?, ?, ?, ?, ?, ?, ?, ?
+) RETURNING id, titel, aktivitaetsart, typ, dokumentart, datum, aktualisiert, abstract, vorgangsbezug_anzahl, wahlperiode, fundstelle_dokumentnummer, fundstelle_datum, fundstelle_dokumentart, fundstelle_herausgeber, fundstelle_id, fundstelle_drucksachetyp, fundstelle_anlagen, fundstelle_anfangsseite, fundstelle_endseite, fundstelle_anfangsquadrant, fundstelle_endquadrant, fundstelle_seite, fundstelle_pdf_url, fundstelle_top, fundstelle_top_zusatz, fundstelle_frage_nummer, fundstelle_verteildatum, created_at, updated_at, fundstelle_xml_url
 `
 
 type CreateAktivitaetParams struct {
@@ -102,6 +102,7 @@ type CreateAktivitaetParams struct {
 	FundstelleEndquadrant     sql.NullString `json:"fundstelle_endquadrant"`
 	FundstelleSeite           sql.NullString `json:"fundstelle_seite"`
 	FundstellePdfUrl          sql.NullString `json:"fundstelle_pdf_url"`
+	FundstelleXmlUrl          sql.NullString `json:"fundstelle_xml_url"`
 	FundstelleTop             sql.NullInt64  `json:"fundstelle_top"`
 	FundstelleTopZusatz       sql.NullString `json:"fundstelle_top_zusatz"`
 	FundstelleFrageNummer     sql.NullString `json:"fundstelle_frage_nummer"`
@@ -133,6 +134,7 @@ func (q *Queries) CreateAktivitaet(ctx context.Context, arg CreateAktivitaetPara
 		arg.FundstelleEndquadrant,
 		arg.FundstelleSeite,
 		arg.FundstellePdfUrl,
+		arg.FundstelleXmlUrl,
 		arg.FundstelleTop,
 		arg.FundstelleTopZusatz,
 		arg.FundstelleFrageNummer,
@@ -169,6 +171,7 @@ func (q *Queries) CreateAktivitaet(ctx context.Context, arg CreateAktivitaetPara
 		&i.FundstelleVerteildatum,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.FundstelleXmlUrl,
 	)
 	return i, err
 }
@@ -238,7 +241,7 @@ func (q *Queries) DeleteAktivitaet(ctx context.Context, id string) error {
 
 const getAktivitaet = `-- name: GetAktivitaet :one
 SELECT 
-    a.id, a.titel, a.aktivitaetsart, a.typ, a.dokumentart, a.datum, a.aktualisiert, a.abstract, a.vorgangsbezug_anzahl, a.wahlperiode, a.fundstelle_dokumentnummer, a.fundstelle_datum, a.fundstelle_dokumentart, a.fundstelle_herausgeber, a.fundstelle_id, a.fundstelle_drucksachetyp, a.fundstelle_anlagen, a.fundstelle_anfangsseite, a.fundstelle_endseite, a.fundstelle_anfangsquadrant, a.fundstelle_endquadrant, a.fundstelle_seite, a.fundstelle_pdf_url, a.fundstelle_top, a.fundstelle_top_zusatz, a.fundstelle_frage_nummer, a.fundstelle_verteildatum, a.created_at, a.updated_at
+    a.id, a.titel, a.aktivitaetsart, a.typ, a.dokumentart, a.datum, a.aktualisiert, a.abstract, a.vorgangsbezug_anzahl, a.wahlperiode, a.fundstelle_dokumentnummer, a.fundstelle_datum, a.fundstelle_dokumentart, a.fundstelle_herausgeber, a.fundstelle_id, a.fundstelle_drucksachetyp, a.fundstelle_anlagen, a.fundstelle_anfangsseite, a.fundstelle_endseite, a.fundstelle_anfangsquadrant, a.fundstelle_endquadrant, a.fundstelle_seite, a.fundstelle_pdf_url, a.fundstelle_top, a.fundstelle_top_zusatz, a.fundstelle_frage_nummer, a.fundstelle_verteildatum, a.created_at, a.updated_at, a.fundstelle_xml_url
 FROM aktivitaet a
 WHERE a.id = ?
 `
@@ -277,6 +280,7 @@ func (q *Queries) GetAktivitaet(ctx context.Context, id string) (Aktivitaet, err
 		&i.FundstelleVerteildatum,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.FundstelleXmlUrl,
 	)
 	return i, err
 }
@@ -363,7 +367,7 @@ func (q *Queries) GetLatestAktivitaetDatum(ctx context.Context) (interface{}, er
 }
 
 const listAktivitaeten = `-- name: ListAktivitaeten :many
-SELECT id, titel, aktivitaetsart, typ, dokumentart, datum, aktualisiert, abstract, vorgangsbezug_anzahl, wahlperiode, fundstelle_dokumentnummer, fundstelle_datum, fundstelle_dokumentart, fundstelle_herausgeber, fundstelle_id, fundstelle_drucksachetyp, fundstelle_anlagen, fundstelle_anfangsseite, fundstelle_endseite, fundstelle_anfangsquadrant, fundstelle_endquadrant, fundstelle_seite, fundstelle_pdf_url, fundstelle_top, fundstelle_top_zusatz, fundstelle_frage_nummer, fundstelle_verteildatum, created_at, updated_at
+SELECT id, titel, aktivitaetsart, typ, dokumentart, datum, aktualisiert, abstract, vorgangsbezug_anzahl, wahlperiode, fundstelle_dokumentnummer, fundstelle_datum, fundstelle_dokumentart, fundstelle_herausgeber, fundstelle_id, fundstelle_drucksachetyp, fundstelle_anlagen, fundstelle_anfangsseite, fundstelle_endseite, fundstelle_anfangsquadrant, fundstelle_endquadrant, fundstelle_seite, fundstelle_pdf_url, fundstelle_top, fundstelle_top_zusatz, fundstelle_frage_nummer, fundstelle_verteildatum, created_at, updated_at, fundstelle_xml_url
 FROM aktivitaet
 WHERE 
     (? IS NULL OR aktualisiert >= ?)
@@ -452,6 +456,7 @@ func (q *Queries) ListAktivitaeten(ctx context.Context, arg ListAktivitaetenPara
 			&i.FundstelleVerteildatum,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.FundstelleXmlUrl,
 		); err != nil {
 			return nil, err
 		}
@@ -476,7 +481,7 @@ SET
     vorgangsbezug_anzahl = ?,
     updated_at = datetime('now')
 WHERE id = ?
-RETURNING id, titel, aktivitaetsart, typ, dokumentart, datum, aktualisiert, abstract, vorgangsbezug_anzahl, wahlperiode, fundstelle_dokumentnummer, fundstelle_datum, fundstelle_dokumentart, fundstelle_herausgeber, fundstelle_id, fundstelle_drucksachetyp, fundstelle_anlagen, fundstelle_anfangsseite, fundstelle_endseite, fundstelle_anfangsquadrant, fundstelle_endquadrant, fundstelle_seite, fundstelle_pdf_url, fundstelle_top, fundstelle_top_zusatz, fundstelle_frage_nummer, fundstelle_verteildatum, created_at, updated_at
+RETURNING id, titel, aktivitaetsart, typ, dokumentart, datum, aktualisiert, abstract, vorgangsbezug_anzahl, wahlperiode, fundstelle_dokumentnummer, fundstelle_datum, fundstelle_dokumentart, fundstelle_herausgeber, fundstelle_id, fundstelle_drucksachetyp, fundstelle_anlagen, fundstelle_anfangsseite, fundstelle_endseite, fundstelle_anfangsquadrant, fundstelle_endquadrant, fundstelle_seite, fundstelle_pdf_url, fundstelle_top, fundstelle_top_zusatz, fundstelle_frage_nummer, fundstelle_verteildatum, created_at, updated_at, fundstelle_xml_url
 `
 
 type UpdateAktivitaetParams struct {
@@ -528,6 +533,7 @@ func (q *Queries) UpdateAktivitaet(ctx context.Context, arg UpdateAktivitaetPara
 		&i.FundstelleVerteildatum,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.FundstelleXmlUrl,
 	)
 	return i, err
 }

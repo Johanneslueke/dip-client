@@ -94,7 +94,7 @@ func (q *Queries) DeletePlenarprotokollText(ctx context.Context, id string) erro
 
 const getPlenarprotokollText = `-- name: GetPlenarprotokollText :one
 SELECT 
-    p.id, p.titel, p.dokumentnummer, p.dokumentart, p.typ, p.herausgeber, p.datum, p.aktualisiert, p.pdf_hash, p.sitzungsbemerkung, p.vorgangsbezug_anzahl, p.wahlperiode, p.fundstelle_dokumentnummer, p.fundstelle_datum, p.fundstelle_dokumentart, p.fundstelle_herausgeber, p.fundstelle_id, p.fundstelle_anfangsseite, p.fundstelle_endseite, p.fundstelle_anfangsquadrant, p.fundstelle_endquadrant, p.fundstelle_seite, p.fundstelle_pdf_url, p.fundstelle_top, p.fundstelle_top_zusatz, p.created_at, p.updated_at,
+    p.id, p.titel, p.dokumentnummer, p.dokumentart, p.typ, p.herausgeber, p.datum, p.aktualisiert, p.pdf_hash, p.sitzungsbemerkung, p.vorgangsbezug_anzahl, p.wahlperiode, p.fundstelle_dokumentnummer, p.fundstelle_datum, p.fundstelle_dokumentart, p.fundstelle_herausgeber, p.fundstelle_id, p.fundstelle_anfangsseite, p.fundstelle_endseite, p.fundstelle_anfangsquadrant, p.fundstelle_endquadrant, p.fundstelle_seite, p.fundstelle_pdf_url, p.fundstelle_top, p.fundstelle_top_zusatz, p.created_at, p.updated_at, p.fundstelle_xml_url,
     pt.text
 FROM plenarprotokoll p
 LEFT JOIN plenarprotokoll_text pt ON p.id = pt.id
@@ -129,6 +129,7 @@ type GetPlenarprotokollTextRow struct {
 	FundstelleTopZusatz       sql.NullString `json:"fundstelle_top_zusatz"`
 	CreatedAt                 string         `json:"created_at"`
 	UpdatedAt                 string         `json:"updated_at"`
+	FundstelleXmlUrl          sql.NullString `json:"fundstelle_xml_url"`
 	Text                      sql.NullString `json:"text"`
 }
 
@@ -163,6 +164,7 @@ func (q *Queries) GetPlenarprotokollText(ctx context.Context, id string) (GetPle
 		&i.FundstelleTopZusatz,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.FundstelleXmlUrl,
 		&i.Text,
 	)
 	return i, err
@@ -170,7 +172,7 @@ func (q *Queries) GetPlenarprotokollText(ctx context.Context, id string) (GetPle
 
 const listPlenarprotokollTexte = `-- name: ListPlenarprotokollTexte :many
 SELECT 
-    p.id, p.titel, p.dokumentnummer, p.dokumentart, p.typ, p.herausgeber, p.datum, p.aktualisiert, p.pdf_hash, p.sitzungsbemerkung, p.vorgangsbezug_anzahl, p.wahlperiode, p.fundstelle_dokumentnummer, p.fundstelle_datum, p.fundstelle_dokumentart, p.fundstelle_herausgeber, p.fundstelle_id, p.fundstelle_anfangsseite, p.fundstelle_endseite, p.fundstelle_anfangsquadrant, p.fundstelle_endquadrant, p.fundstelle_seite, p.fundstelle_pdf_url, p.fundstelle_top, p.fundstelle_top_zusatz, p.created_at, p.updated_at,
+    p.id, p.titel, p.dokumentnummer, p.dokumentart, p.typ, p.herausgeber, p.datum, p.aktualisiert, p.pdf_hash, p.sitzungsbemerkung, p.vorgangsbezug_anzahl, p.wahlperiode, p.fundstelle_dokumentnummer, p.fundstelle_datum, p.fundstelle_dokumentart, p.fundstelle_herausgeber, p.fundstelle_id, p.fundstelle_anfangsseite, p.fundstelle_endseite, p.fundstelle_anfangsquadrant, p.fundstelle_endquadrant, p.fundstelle_seite, p.fundstelle_pdf_url, p.fundstelle_top, p.fundstelle_top_zusatz, p.created_at, p.updated_at, p.fundstelle_xml_url,
     pt.text
 FROM plenarprotokoll p
 INNER JOIN plenarprotokoll_text pt ON p.id = pt.id
@@ -230,6 +232,7 @@ type ListPlenarprotokollTexteRow struct {
 	FundstelleTopZusatz       sql.NullString `json:"fundstelle_top_zusatz"`
 	CreatedAt                 string         `json:"created_at"`
 	UpdatedAt                 string         `json:"updated_at"`
+	FundstelleXmlUrl          sql.NullString `json:"fundstelle_xml_url"`
 	Text                      sql.NullString `json:"text"`
 }
 
@@ -285,6 +288,7 @@ func (q *Queries) ListPlenarprotokollTexte(ctx context.Context, arg ListPlenarpr
 			&i.FundstelleTopZusatz,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.FundstelleXmlUrl,
 			&i.Text,
 		); err != nil {
 			return nil, err

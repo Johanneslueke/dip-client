@@ -163,6 +163,7 @@ func storePlenarprotokoll(ctx context.Context, q *db.Queries, item interface{}, 
 		FundstelleEndquadrant:     quadrantToNullString(fundstelle.Endquadrant),
 		FundstelleSeite:           ptrToNullString(fundstelle.Seite),
 		FundstellePdfUrl:          ptrToNullString(fundstelle.PdfUrl),
+		FundstelleXmlUrl:          ptrToNullString(fundstelle.XmlUrl),
 		FundstelleTop:             ptrInt32ToNullInt64(fundstelle.Top),
 		FundstelleTopZusatz:       ptrToNullString(fundstelle.TopZusatz),
 	}

@@ -99,7 +99,7 @@ func (q *Queries) DeleteDrucksacheText(ctx context.Context, id string) error {
 
 const getDrucksacheText = `-- name: GetDrucksacheText :one
 SELECT 
-    d.id, d.titel, d.dokumentnummer, d.dokumentart, d.typ, d.drucksachetyp, d.herausgeber, d.datum, d.aktualisiert, d.anlagen, d.autoren_anzahl, d.vorgangsbezug_anzahl, d.pdf_hash, d.wahlperiode, d.fundstelle_dokumentnummer, d.fundstelle_datum, d.fundstelle_dokumentart, d.fundstelle_herausgeber, d.fundstelle_id, d.fundstelle_drucksachetyp, d.fundstelle_anlagen, d.fundstelle_anfangsseite, d.fundstelle_endseite, d.fundstelle_anfangsquadrant, d.fundstelle_endquadrant, d.fundstelle_seite, d.fundstelle_pdf_url, d.fundstelle_top, d.fundstelle_top_zusatz, d.fundstelle_frage_nummer, d.fundstelle_verteildatum, d.created_at, d.updated_at,
+    d.id, d.titel, d.dokumentnummer, d.dokumentart, d.typ, d.drucksachetyp, d.herausgeber, d.datum, d.aktualisiert, d.anlagen, d.autoren_anzahl, d.vorgangsbezug_anzahl, d.pdf_hash, d.wahlperiode, d.fundstelle_dokumentnummer, d.fundstelle_datum, d.fundstelle_dokumentart, d.fundstelle_herausgeber, d.fundstelle_id, d.fundstelle_drucksachetyp, d.fundstelle_anlagen, d.fundstelle_anfangsseite, d.fundstelle_endseite, d.fundstelle_anfangsquadrant, d.fundstelle_endquadrant, d.fundstelle_seite, d.fundstelle_pdf_url, d.fundstelle_top, d.fundstelle_top_zusatz, d.fundstelle_frage_nummer, d.fundstelle_verteildatum, d.created_at, d.updated_at, d.fundstelle_xml_url,
     dt.text
 FROM drucksache d
 LEFT JOIN drucksache_text dt ON d.id = dt.id
@@ -140,6 +140,7 @@ type GetDrucksacheTextRow struct {
 	FundstelleVerteildatum    sql.NullString `json:"fundstelle_verteildatum"`
 	CreatedAt                 string         `json:"created_at"`
 	UpdatedAt                 string         `json:"updated_at"`
+	FundstelleXmlUrl          sql.NullString `json:"fundstelle_xml_url"`
 	Text                      sql.NullString `json:"text"`
 }
 
@@ -180,6 +181,7 @@ func (q *Queries) GetDrucksacheText(ctx context.Context, id string) (GetDrucksac
 		&i.FundstelleVerteildatum,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.FundstelleXmlUrl,
 		&i.Text,
 	)
 	return i, err
@@ -198,7 +200,7 @@ func (q *Queries) GetLatestDrucksacheTextDatum(ctx context.Context) (interface{}
 
 const listDrucksacheTexte = `-- name: ListDrucksacheTexte :many
 SELECT 
-    d.id, d.titel, d.dokumentnummer, d.dokumentart, d.typ, d.drucksachetyp, d.herausgeber, d.datum, d.aktualisiert, d.anlagen, d.autoren_anzahl, d.vorgangsbezug_anzahl, d.pdf_hash, d.wahlperiode, d.fundstelle_dokumentnummer, d.fundstelle_datum, d.fundstelle_dokumentart, d.fundstelle_herausgeber, d.fundstelle_id, d.fundstelle_drucksachetyp, d.fundstelle_anlagen, d.fundstelle_anfangsseite, d.fundstelle_endseite, d.fundstelle_anfangsquadrant, d.fundstelle_endquadrant, d.fundstelle_seite, d.fundstelle_pdf_url, d.fundstelle_top, d.fundstelle_top_zusatz, d.fundstelle_frage_nummer, d.fundstelle_verteildatum, d.created_at, d.updated_at,
+    d.id, d.titel, d.dokumentnummer, d.dokumentart, d.typ, d.drucksachetyp, d.herausgeber, d.datum, d.aktualisiert, d.anlagen, d.autoren_anzahl, d.vorgangsbezug_anzahl, d.pdf_hash, d.wahlperiode, d.fundstelle_dokumentnummer, d.fundstelle_datum, d.fundstelle_dokumentart, d.fundstelle_herausgeber, d.fundstelle_id, d.fundstelle_drucksachetyp, d.fundstelle_anlagen, d.fundstelle_anfangsseite, d.fundstelle_endseite, d.fundstelle_anfangsquadrant, d.fundstelle_endquadrant, d.fundstelle_seite, d.fundstelle_pdf_url, d.fundstelle_top, d.fundstelle_top_zusatz, d.fundstelle_frage_nummer, d.fundstelle_verteildatum, d.created_at, d.updated_at, d.fundstelle_xml_url,
     dt.text
 FROM drucksache d
 INNER JOIN drucksache_text dt ON d.id = dt.id
@@ -267,6 +269,7 @@ type ListDrucksacheTexteRow struct {
 	FundstelleVerteildatum    sql.NullString `json:"fundstelle_verteildatum"`
 	CreatedAt                 string         `json:"created_at"`
 	UpdatedAt                 string         `json:"updated_at"`
+	FundstelleXmlUrl          sql.NullString `json:"fundstelle_xml_url"`
 	Text                      sql.NullString `json:"text"`
 }
 
@@ -330,6 +333,7 @@ func (q *Queries) ListDrucksacheTexte(ctx context.Context, arg ListDrucksacheTex
 			&i.FundstelleVerteildatum,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.FundstelleXmlUrl,
 			&i.Text,
 		); err != nil {
 			return nil, err

@@ -38,11 +38,11 @@ INSERT INTO plenarprotokoll (
     fundstelle_dokumentnummer, fundstelle_datum, fundstelle_dokumentart,
     fundstelle_herausgeber, fundstelle_id, fundstelle_anfangsseite, fundstelle_endseite,
     fundstelle_anfangsquadrant, fundstelle_endquadrant, fundstelle_seite,
-    fundstelle_pdf_url, fundstelle_top, fundstelle_top_zusatz
+    fundstelle_pdf_url, fundstelle_xml_url, fundstelle_top, fundstelle_top_zusatz
 ) VALUES (
     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-    ?, ?, ?, ?, ?
+    ?, ?, ?, ?, ?, ?
 ) RETURNING *;
 
 -- name: UpdatePlenarprotokoll :one

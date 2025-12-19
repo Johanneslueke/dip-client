@@ -70,13 +70,13 @@ INSERT INTO drucksache (
     fundstelle_herausgeber, fundstelle_id, fundstelle_drucksachetyp,
     fundstelle_anlagen, fundstelle_anfangsseite, fundstelle_endseite,
     fundstelle_anfangsquadrant, fundstelle_endquadrant, fundstelle_seite,
-    fundstelle_pdf_url, fundstelle_top, fundstelle_top_zusatz,
+    fundstelle_pdf_url, fundstelle_xml_url, fundstelle_top, fundstelle_top_zusatz,
     fundstelle_frage_nummer, fundstelle_verteildatum
 ) VALUES (
     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-) RETURNING id, titel, dokumentnummer, dokumentart, typ, drucksachetyp, herausgeber, datum, aktualisiert, anlagen, autoren_anzahl, vorgangsbezug_anzahl, pdf_hash, wahlperiode, fundstelle_dokumentnummer, fundstelle_datum, fundstelle_dokumentart, fundstelle_herausgeber, fundstelle_id, fundstelle_drucksachetyp, fundstelle_anlagen, fundstelle_anfangsseite, fundstelle_endseite, fundstelle_anfangsquadrant, fundstelle_endquadrant, fundstelle_seite, fundstelle_pdf_url, fundstelle_top, fundstelle_top_zusatz, fundstelle_frage_nummer, fundstelle_verteildatum, created_at, updated_at
+    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+) RETURNING id, titel, dokumentnummer, dokumentart, typ, drucksachetyp, herausgeber, datum, aktualisiert, anlagen, autoren_anzahl, vorgangsbezug_anzahl, pdf_hash, wahlperiode, fundstelle_dokumentnummer, fundstelle_datum, fundstelle_dokumentart, fundstelle_herausgeber, fundstelle_id, fundstelle_drucksachetyp, fundstelle_anlagen, fundstelle_anfangsseite, fundstelle_endseite, fundstelle_anfangsquadrant, fundstelle_endquadrant, fundstelle_seite, fundstelle_pdf_url, fundstelle_top, fundstelle_top_zusatz, fundstelle_frage_nummer, fundstelle_verteildatum, created_at, updated_at, fundstelle_xml_url
 `
 
 type CreateDrucksacheParams struct {
@@ -107,6 +107,7 @@ type CreateDrucksacheParams struct {
 	FundstelleEndquadrant     sql.NullString `json:"fundstelle_endquadrant"`
 	FundstelleSeite           sql.NullString `json:"fundstelle_seite"`
 	FundstellePdfUrl          sql.NullString `json:"fundstelle_pdf_url"`
+	FundstelleXmlUrl          sql.NullString `json:"fundstelle_xml_url"`
 	FundstelleTop             sql.NullInt64  `json:"fundstelle_top"`
 	FundstelleTopZusatz       sql.NullString `json:"fundstelle_top_zusatz"`
 	FundstelleFrageNummer     sql.NullString `json:"fundstelle_frage_nummer"`
@@ -142,6 +143,7 @@ func (q *Queries) CreateDrucksache(ctx context.Context, arg CreateDrucksachePara
 		arg.FundstelleEndquadrant,
 		arg.FundstelleSeite,
 		arg.FundstellePdfUrl,
+		arg.FundstelleXmlUrl,
 		arg.FundstelleTop,
 		arg.FundstelleTopZusatz,
 		arg.FundstelleFrageNummer,
@@ -182,6 +184,7 @@ func (q *Queries) CreateDrucksache(ctx context.Context, arg CreateDrucksachePara
 		&i.FundstelleVerteildatum,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.FundstelleXmlUrl,
 	)
 	return i, err
 }
@@ -305,7 +308,7 @@ func (q *Queries) DeleteDrucksache(ctx context.Context, id string) error {
 }
 
 const getDrucksache = `-- name: GetDrucksache :one
-SELECT id, titel, dokumentnummer, dokumentart, typ, drucksachetyp, herausgeber, datum, aktualisiert, anlagen, autoren_anzahl, vorgangsbezug_anzahl, pdf_hash, wahlperiode, fundstelle_dokumentnummer, fundstelle_datum, fundstelle_dokumentart, fundstelle_herausgeber, fundstelle_id, fundstelle_drucksachetyp, fundstelle_anlagen, fundstelle_anfangsseite, fundstelle_endseite, fundstelle_anfangsquadrant, fundstelle_endquadrant, fundstelle_seite, fundstelle_pdf_url, fundstelle_top, fundstelle_top_zusatz, fundstelle_frage_nummer, fundstelle_verteildatum, created_at, updated_at
+SELECT id, titel, dokumentnummer, dokumentart, typ, drucksachetyp, herausgeber, datum, aktualisiert, anlagen, autoren_anzahl, vorgangsbezug_anzahl, pdf_hash, wahlperiode, fundstelle_dokumentnummer, fundstelle_datum, fundstelle_dokumentart, fundstelle_herausgeber, fundstelle_id, fundstelle_drucksachetyp, fundstelle_anlagen, fundstelle_anfangsseite, fundstelle_endseite, fundstelle_anfangsquadrant, fundstelle_endquadrant, fundstelle_seite, fundstelle_pdf_url, fundstelle_top, fundstelle_top_zusatz, fundstelle_frage_nummer, fundstelle_verteildatum, created_at, updated_at, fundstelle_xml_url
 FROM drucksache
 WHERE id = ?
 `
@@ -347,13 +350,14 @@ func (q *Queries) GetDrucksache(ctx context.Context, id string) (Drucksache, err
 		&i.FundstelleVerteildatum,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.FundstelleXmlUrl,
 	)
 	return i, err
 }
 
 const getDrucksacheWithRelations = `-- name: GetDrucksacheWithRelations :many
 SELECT 
-    d.id, d.titel, d.dokumentnummer, d.dokumentart, d.typ, d.drucksachetyp, d.herausgeber, d.datum, d.aktualisiert, d.anlagen, d.autoren_anzahl, d.vorgangsbezug_anzahl, d.pdf_hash, d.wahlperiode, d.fundstelle_dokumentnummer, d.fundstelle_datum, d.fundstelle_dokumentart, d.fundstelle_herausgeber, d.fundstelle_id, d.fundstelle_drucksachetyp, d.fundstelle_anlagen, d.fundstelle_anfangsseite, d.fundstelle_endseite, d.fundstelle_anfangsquadrant, d.fundstelle_endquadrant, d.fundstelle_seite, d.fundstelle_pdf_url, d.fundstelle_top, d.fundstelle_top_zusatz, d.fundstelle_frage_nummer, d.fundstelle_verteildatum, d.created_at, d.updated_at,
+    d.id, d.titel, d.dokumentnummer, d.dokumentart, d.typ, d.drucksachetyp, d.herausgeber, d.datum, d.aktualisiert, d.anlagen, d.autoren_anzahl, d.vorgangsbezug_anzahl, d.pdf_hash, d.wahlperiode, d.fundstelle_dokumentnummer, d.fundstelle_datum, d.fundstelle_dokumentart, d.fundstelle_herausgeber, d.fundstelle_id, d.fundstelle_drucksachetyp, d.fundstelle_anlagen, d.fundstelle_anfangsseite, d.fundstelle_endseite, d.fundstelle_anfangsquadrant, d.fundstelle_endquadrant, d.fundstelle_seite, d.fundstelle_pdf_url, d.fundstelle_top, d.fundstelle_top_zusatz, d.fundstelle_frage_nummer, d.fundstelle_verteildatum, d.created_at, d.updated_at, d.fundstelle_xml_url,
     daa.person_id as autor_person_id,
     daa.autor_titel,
     daa.title as autor_title,
@@ -407,6 +411,7 @@ type GetDrucksacheWithRelationsRow struct {
 	FundstelleVerteildatum    sql.NullString `json:"fundstelle_verteildatum"`
 	CreatedAt                 string         `json:"created_at"`
 	UpdatedAt                 string         `json:"updated_at"`
+	FundstelleXmlUrl          sql.NullString `json:"fundstelle_xml_url"`
 	AutorPersonID             sql.NullString `json:"autor_person_id"`
 	AutorTitel                sql.NullString `json:"autor_titel"`
 	AutorTitle                sql.NullString `json:"autor_title"`
@@ -462,6 +467,7 @@ func (q *Queries) GetDrucksacheWithRelations(ctx context.Context, id string) ([]
 			&i.FundstelleVerteildatum,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.FundstelleXmlUrl,
 			&i.AutorPersonID,
 			&i.AutorTitel,
 			&i.AutorTitle,
@@ -498,7 +504,7 @@ func (q *Queries) GetLatestDrucksacheDatum(ctx context.Context) (interface{}, er
 }
 
 const listDrucksachen = `-- name: ListDrucksachen :many
-SELECT id, titel, dokumentnummer, dokumentart, typ, drucksachetyp, herausgeber, datum, aktualisiert, anlagen, autoren_anzahl, vorgangsbezug_anzahl, pdf_hash, wahlperiode, fundstelle_dokumentnummer, fundstelle_datum, fundstelle_dokumentart, fundstelle_herausgeber, fundstelle_id, fundstelle_drucksachetyp, fundstelle_anlagen, fundstelle_anfangsseite, fundstelle_endseite, fundstelle_anfangsquadrant, fundstelle_endquadrant, fundstelle_seite, fundstelle_pdf_url, fundstelle_top, fundstelle_top_zusatz, fundstelle_frage_nummer, fundstelle_verteildatum, created_at, updated_at
+SELECT id, titel, dokumentnummer, dokumentart, typ, drucksachetyp, herausgeber, datum, aktualisiert, anlagen, autoren_anzahl, vorgangsbezug_anzahl, pdf_hash, wahlperiode, fundstelle_dokumentnummer, fundstelle_datum, fundstelle_dokumentart, fundstelle_herausgeber, fundstelle_id, fundstelle_drucksachetyp, fundstelle_anlagen, fundstelle_anfangsseite, fundstelle_endseite, fundstelle_anfangsquadrant, fundstelle_endquadrant, fundstelle_seite, fundstelle_pdf_url, fundstelle_top, fundstelle_top_zusatz, fundstelle_frage_nummer, fundstelle_verteildatum, created_at, updated_at, fundstelle_xml_url
 FROM drucksache
 WHERE 
     (? IS NULL OR aktualisiert >= ?)
@@ -591,6 +597,7 @@ func (q *Queries) ListDrucksachen(ctx context.Context, arg ListDrucksachenParams
 			&i.FundstelleVerteildatum,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.FundstelleXmlUrl,
 		); err != nil {
 			return nil, err
 		}
@@ -616,7 +623,7 @@ SET
     pdf_hash = ?,
     updated_at = datetime('now')
 WHERE id = ?
-RETURNING id, titel, dokumentnummer, dokumentart, typ, drucksachetyp, herausgeber, datum, aktualisiert, anlagen, autoren_anzahl, vorgangsbezug_anzahl, pdf_hash, wahlperiode, fundstelle_dokumentnummer, fundstelle_datum, fundstelle_dokumentart, fundstelle_herausgeber, fundstelle_id, fundstelle_drucksachetyp, fundstelle_anlagen, fundstelle_anfangsseite, fundstelle_endseite, fundstelle_anfangsquadrant, fundstelle_endquadrant, fundstelle_seite, fundstelle_pdf_url, fundstelle_top, fundstelle_top_zusatz, fundstelle_frage_nummer, fundstelle_verteildatum, created_at, updated_at
+RETURNING id, titel, dokumentnummer, dokumentart, typ, drucksachetyp, herausgeber, datum, aktualisiert, anlagen, autoren_anzahl, vorgangsbezug_anzahl, pdf_hash, wahlperiode, fundstelle_dokumentnummer, fundstelle_datum, fundstelle_dokumentart, fundstelle_herausgeber, fundstelle_id, fundstelle_drucksachetyp, fundstelle_anlagen, fundstelle_anfangsseite, fundstelle_endseite, fundstelle_anfangsquadrant, fundstelle_endquadrant, fundstelle_seite, fundstelle_pdf_url, fundstelle_top, fundstelle_top_zusatz, fundstelle_frage_nummer, fundstelle_verteildatum, created_at, updated_at, fundstelle_xml_url
 `
 
 type UpdateDrucksacheParams struct {
@@ -674,6 +681,7 @@ func (q *Queries) UpdateDrucksache(ctx context.Context, arg UpdateDrucksachePara
 		&i.FundstelleVerteildatum,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.FundstelleXmlUrl,
 	)
 	return i, err
 }

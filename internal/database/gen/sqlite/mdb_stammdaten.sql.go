@@ -304,11 +304,14 @@ func (q *Queries) CreateMdbWahlperiodeMembership(ctx context.Context, arg Create
 }
 
 const createPersonMdbLink = `-- name: CreatePersonMdbLink :exec
+;
+
+
 INSERT INTO person_mdb_link (
     person_id, mdb_id, match_confidence, match_method,
     verified_by, verified_at, notes,
     created_at, updated_at
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?
 `
 
 type CreatePersonMdbLinkParams struct {

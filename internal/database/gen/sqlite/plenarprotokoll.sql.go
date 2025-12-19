@@ -63,12 +63,12 @@ INSERT INTO plenarprotokoll (
     fundstelle_dokumentnummer, fundstelle_datum, fundstelle_dokumentart,
     fundstelle_herausgeber, fundstelle_id, fundstelle_anfangsseite, fundstelle_endseite,
     fundstelle_anfangsquadrant, fundstelle_endquadrant, fundstelle_seite,
-    fundstelle_pdf_url, fundstelle_top, fundstelle_top_zusatz
+    fundstelle_pdf_url, fundstelle_xml_url, fundstelle_top, fundstelle_top_zusatz
 ) VALUES (
     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-    ?, ?, ?, ?, ?
-) RETURNING id, titel, dokumentnummer, dokumentart, typ, herausgeber, datum, aktualisiert, pdf_hash, sitzungsbemerkung, vorgangsbezug_anzahl, wahlperiode, fundstelle_dokumentnummer, fundstelle_datum, fundstelle_dokumentart, fundstelle_herausgeber, fundstelle_id, fundstelle_anfangsseite, fundstelle_endseite, fundstelle_anfangsquadrant, fundstelle_endquadrant, fundstelle_seite, fundstelle_pdf_url, fundstelle_top, fundstelle_top_zusatz, created_at, updated_at
+    ?, ?, ?, ?, ?, ?
+) RETURNING id, titel, dokumentnummer, dokumentart, typ, herausgeber, datum, aktualisiert, pdf_hash, sitzungsbemerkung, vorgangsbezug_anzahl, wahlperiode, fundstelle_dokumentnummer, fundstelle_datum, fundstelle_dokumentart, fundstelle_herausgeber, fundstelle_id, fundstelle_anfangsseite, fundstelle_endseite, fundstelle_anfangsquadrant, fundstelle_endquadrant, fundstelle_seite, fundstelle_pdf_url, fundstelle_top, fundstelle_top_zusatz, created_at, updated_at, fundstelle_xml_url
 `
 
 type CreatePlenarprotokollParams struct {
@@ -95,6 +95,7 @@ type CreatePlenarprotokollParams struct {
 	FundstelleEndquadrant     sql.NullString `json:"fundstelle_endquadrant"`
 	FundstelleSeite           sql.NullString `json:"fundstelle_seite"`
 	FundstellePdfUrl          sql.NullString `json:"fundstelle_pdf_url"`
+	FundstelleXmlUrl          sql.NullString `json:"fundstelle_xml_url"`
 	FundstelleTop             sql.NullInt64  `json:"fundstelle_top"`
 	FundstelleTopZusatz       sql.NullString `json:"fundstelle_top_zusatz"`
 }
@@ -124,6 +125,7 @@ func (q *Queries) CreatePlenarprotokoll(ctx context.Context, arg CreatePlenarpro
 		arg.FundstelleEndquadrant,
 		arg.FundstelleSeite,
 		arg.FundstellePdfUrl,
+		arg.FundstelleXmlUrl,
 		arg.FundstelleTop,
 		arg.FundstelleTopZusatz,
 	)
@@ -156,6 +158,7 @@ func (q *Queries) CreatePlenarprotokoll(ctx context.Context, arg CreatePlenarpro
 		&i.FundstelleTopZusatz,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.FundstelleXmlUrl,
 	)
 	return i, err
 }
@@ -207,7 +210,7 @@ func (q *Queries) GetLatestPlenarprotokollDatum(ctx context.Context) (interface{
 }
 
 const getPlenarprotokoll = `-- name: GetPlenarprotokoll :one
-SELECT id, titel, dokumentnummer, dokumentart, typ, herausgeber, datum, aktualisiert, pdf_hash, sitzungsbemerkung, vorgangsbezug_anzahl, wahlperiode, fundstelle_dokumentnummer, fundstelle_datum, fundstelle_dokumentart, fundstelle_herausgeber, fundstelle_id, fundstelle_anfangsseite, fundstelle_endseite, fundstelle_anfangsquadrant, fundstelle_endquadrant, fundstelle_seite, fundstelle_pdf_url, fundstelle_top, fundstelle_top_zusatz, created_at, updated_at
+SELECT id, titel, dokumentnummer, dokumentart, typ, herausgeber, datum, aktualisiert, pdf_hash, sitzungsbemerkung, vorgangsbezug_anzahl, wahlperiode, fundstelle_dokumentnummer, fundstelle_datum, fundstelle_dokumentart, fundstelle_herausgeber, fundstelle_id, fundstelle_anfangsseite, fundstelle_endseite, fundstelle_anfangsquadrant, fundstelle_endquadrant, fundstelle_seite, fundstelle_pdf_url, fundstelle_top, fundstelle_top_zusatz, created_at, updated_at, fundstelle_xml_url
 FROM plenarprotokoll
 WHERE id = ?
 `
@@ -243,13 +246,14 @@ func (q *Queries) GetPlenarprotokoll(ctx context.Context, id string) (Plenarprot
 		&i.FundstelleTopZusatz,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.FundstelleXmlUrl,
 	)
 	return i, err
 }
 
 const getPlenarprotokollWithVorgangsbezug = `-- name: GetPlenarprotokollWithVorgangsbezug :many
 SELECT 
-    p.id, p.titel, p.dokumentnummer, p.dokumentart, p.typ, p.herausgeber, p.datum, p.aktualisiert, p.pdf_hash, p.sitzungsbemerkung, p.vorgangsbezug_anzahl, p.wahlperiode, p.fundstelle_dokumentnummer, p.fundstelle_datum, p.fundstelle_dokumentart, p.fundstelle_herausgeber, p.fundstelle_id, p.fundstelle_anfangsseite, p.fundstelle_endseite, p.fundstelle_anfangsquadrant, p.fundstelle_endquadrant, p.fundstelle_seite, p.fundstelle_pdf_url, p.fundstelle_top, p.fundstelle_top_zusatz, p.created_at, p.updated_at,
+    p.id, p.titel, p.dokumentnummer, p.dokumentart, p.typ, p.herausgeber, p.datum, p.aktualisiert, p.pdf_hash, p.sitzungsbemerkung, p.vorgangsbezug_anzahl, p.wahlperiode, p.fundstelle_dokumentnummer, p.fundstelle_datum, p.fundstelle_dokumentart, p.fundstelle_herausgeber, p.fundstelle_id, p.fundstelle_anfangsseite, p.fundstelle_endseite, p.fundstelle_anfangsquadrant, p.fundstelle_endquadrant, p.fundstelle_seite, p.fundstelle_pdf_url, p.fundstelle_top, p.fundstelle_top_zusatz, p.created_at, p.updated_at, p.fundstelle_xml_url,
     pvb.vorgang_id,
     pvb.titel as vorgangsbezug_titel,
     pvb.vorgangstyp as vorgangsbezug_typ,
@@ -288,6 +292,7 @@ type GetPlenarprotokollWithVorgangsbezugRow struct {
 	FundstelleTopZusatz       sql.NullString `json:"fundstelle_top_zusatz"`
 	CreatedAt                 string         `json:"created_at"`
 	UpdatedAt                 string         `json:"updated_at"`
+	FundstelleXmlUrl          sql.NullString `json:"fundstelle_xml_url"`
 	VorgangID                 sql.NullString `json:"vorgang_id"`
 	VorgangsbezugTitel        sql.NullString `json:"vorgangsbezug_titel"`
 	VorgangsbezugTyp          sql.NullString `json:"vorgangsbezug_typ"`
@@ -331,6 +336,7 @@ func (q *Queries) GetPlenarprotokollWithVorgangsbezug(ctx context.Context, id st
 			&i.FundstelleTopZusatz,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.FundstelleXmlUrl,
 			&i.VorgangID,
 			&i.VorgangsbezugTitel,
 			&i.VorgangsbezugTyp,
@@ -350,7 +356,7 @@ func (q *Queries) GetPlenarprotokollWithVorgangsbezug(ctx context.Context, id st
 }
 
 const listPlenarprotokolle = `-- name: ListPlenarprotokolle :many
-SELECT id, titel, dokumentnummer, dokumentart, typ, herausgeber, datum, aktualisiert, pdf_hash, sitzungsbemerkung, vorgangsbezug_anzahl, wahlperiode, fundstelle_dokumentnummer, fundstelle_datum, fundstelle_dokumentart, fundstelle_herausgeber, fundstelle_id, fundstelle_anfangsseite, fundstelle_endseite, fundstelle_anfangsquadrant, fundstelle_endquadrant, fundstelle_seite, fundstelle_pdf_url, fundstelle_top, fundstelle_top_zusatz, created_at, updated_at
+SELECT id, titel, dokumentnummer, dokumentart, typ, herausgeber, datum, aktualisiert, pdf_hash, sitzungsbemerkung, vorgangsbezug_anzahl, wahlperiode, fundstelle_dokumentnummer, fundstelle_datum, fundstelle_dokumentart, fundstelle_herausgeber, fundstelle_id, fundstelle_anfangsseite, fundstelle_endseite, fundstelle_anfangsquadrant, fundstelle_endquadrant, fundstelle_seite, fundstelle_pdf_url, fundstelle_top, fundstelle_top_zusatz, created_at, updated_at, fundstelle_xml_url
 FROM plenarprotokoll
 WHERE 
     (? IS NULL OR aktualisiert >= ?)
@@ -432,6 +438,7 @@ func (q *Queries) ListPlenarprotokolle(ctx context.Context, arg ListPlenarprotok
 			&i.FundstelleTopZusatz,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.FundstelleXmlUrl,
 		); err != nil {
 			return nil, err
 		}
@@ -456,7 +463,7 @@ SET
     vorgangsbezug_anzahl = ?,
     updated_at = datetime('now')
 WHERE id = ?
-RETURNING id, titel, dokumentnummer, dokumentart, typ, herausgeber, datum, aktualisiert, pdf_hash, sitzungsbemerkung, vorgangsbezug_anzahl, wahlperiode, fundstelle_dokumentnummer, fundstelle_datum, fundstelle_dokumentart, fundstelle_herausgeber, fundstelle_id, fundstelle_anfangsseite, fundstelle_endseite, fundstelle_anfangsquadrant, fundstelle_endquadrant, fundstelle_seite, fundstelle_pdf_url, fundstelle_top, fundstelle_top_zusatz, created_at, updated_at
+RETURNING id, titel, dokumentnummer, dokumentart, typ, herausgeber, datum, aktualisiert, pdf_hash, sitzungsbemerkung, vorgangsbezug_anzahl, wahlperiode, fundstelle_dokumentnummer, fundstelle_datum, fundstelle_dokumentart, fundstelle_herausgeber, fundstelle_id, fundstelle_anfangsseite, fundstelle_endseite, fundstelle_anfangsquadrant, fundstelle_endquadrant, fundstelle_seite, fundstelle_pdf_url, fundstelle_top, fundstelle_top_zusatz, created_at, updated_at, fundstelle_xml_url
 `
 
 type UpdatePlenarprotokollParams struct {
@@ -506,6 +513,7 @@ func (q *Queries) UpdatePlenarprotokoll(ctx context.Context, arg UpdatePlenarpro
 		&i.FundstelleTopZusatz,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.FundstelleXmlUrl,
 	)
 	return i, err
 }

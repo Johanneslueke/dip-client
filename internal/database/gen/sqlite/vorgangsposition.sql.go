@@ -196,14 +196,14 @@ INSERT INTO vorgangsposition (
     fundstelle_herausgeber, fundstelle_id, fundstelle_drucksachetyp,
     fundstelle_anlagen, fundstelle_anfangsseite, fundstelle_endseite,
     fundstelle_anfangsquadrant, fundstelle_endquadrant, fundstelle_seite,
-    fundstelle_pdf_url, fundstelle_top, fundstelle_top_zusatz,
+    fundstelle_pdf_url, fundstelle_xml_url, fundstelle_top, fundstelle_top_zusatz,
     fundstelle_frage_nummer, fundstelle_verteildatum
 ) VALUES (
     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-    ?, ?, ?, ?, ?
-) RETURNING id, vorgang_id, titel, vorgangsposition, vorgangstyp, typ, dokumentart, datum, aktualisiert, abstract, fortsetzung, gang, nachtrag, aktivitaet_anzahl, kom, ratsdok, sek, zuordnung, fundstelle_dokumentnummer, fundstelle_datum, fundstelle_dokumentart, fundstelle_herausgeber, fundstelle_id, fundstelle_drucksachetyp, fundstelle_anlagen, fundstelle_anfangsseite, fundstelle_endseite, fundstelle_anfangsquadrant, fundstelle_endquadrant, fundstelle_seite, fundstelle_pdf_url, fundstelle_top, fundstelle_top_zusatz, fundstelle_frage_nummer, fundstelle_verteildatum, created_at, updated_at
+    ?, ?, ?, ?, ?, ?
+) RETURNING id, vorgang_id, titel, vorgangsposition, vorgangstyp, typ, dokumentart, datum, aktualisiert, abstract, fortsetzung, gang, nachtrag, aktivitaet_anzahl, kom, ratsdok, sek, zuordnung, fundstelle_dokumentnummer, fundstelle_datum, fundstelle_dokumentart, fundstelle_herausgeber, fundstelle_id, fundstelle_drucksachetyp, fundstelle_anlagen, fundstelle_anfangsseite, fundstelle_endseite, fundstelle_anfangsquadrant, fundstelle_endquadrant, fundstelle_seite, fundstelle_pdf_url, fundstelle_top, fundstelle_top_zusatz, fundstelle_frage_nummer, fundstelle_verteildatum, created_at, updated_at, fundstelle_xml_url
 `
 
 type CreateVorgangspositionParams struct {
@@ -238,6 +238,7 @@ type CreateVorgangspositionParams struct {
 	FundstelleEndquadrant     sql.NullString `json:"fundstelle_endquadrant"`
 	FundstelleSeite           sql.NullString `json:"fundstelle_seite"`
 	FundstellePdfUrl          sql.NullString `json:"fundstelle_pdf_url"`
+	FundstelleXmlUrl          sql.NullString `json:"fundstelle_xml_url"`
 	FundstelleTop             sql.NullInt64  `json:"fundstelle_top"`
 	FundstelleTopZusatz       sql.NullString `json:"fundstelle_top_zusatz"`
 	FundstelleFrageNummer     sql.NullString `json:"fundstelle_frage_nummer"`
@@ -277,6 +278,7 @@ func (q *Queries) CreateVorgangsposition(ctx context.Context, arg CreateVorgangs
 		arg.FundstelleEndquadrant,
 		arg.FundstelleSeite,
 		arg.FundstellePdfUrl,
+		arg.FundstelleXmlUrl,
 		arg.FundstelleTop,
 		arg.FundstelleTopZusatz,
 		arg.FundstelleFrageNummer,
@@ -321,6 +323,7 @@ func (q *Queries) CreateVorgangsposition(ctx context.Context, arg CreateVorgangs
 		&i.FundstelleVerteildatum,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.FundstelleXmlUrl,
 	)
 	return i, err
 }
@@ -419,7 +422,7 @@ func (q *Queries) GetLatestVorgangspositionDatum(ctx context.Context) (interface
 }
 
 const getVorgangsposition = `-- name: GetVorgangsposition :one
-SELECT id, vorgang_id, titel, vorgangsposition, vorgangstyp, typ, dokumentart, datum, aktualisiert, abstract, fortsetzung, gang, nachtrag, aktivitaet_anzahl, kom, ratsdok, sek, zuordnung, fundstelle_dokumentnummer, fundstelle_datum, fundstelle_dokumentart, fundstelle_herausgeber, fundstelle_id, fundstelle_drucksachetyp, fundstelle_anlagen, fundstelle_anfangsseite, fundstelle_endseite, fundstelle_anfangsquadrant, fundstelle_endquadrant, fundstelle_seite, fundstelle_pdf_url, fundstelle_top, fundstelle_top_zusatz, fundstelle_frage_nummer, fundstelle_verteildatum, created_at, updated_at
+SELECT id, vorgang_id, titel, vorgangsposition, vorgangstyp, typ, dokumentart, datum, aktualisiert, abstract, fortsetzung, gang, nachtrag, aktivitaet_anzahl, kom, ratsdok, sek, zuordnung, fundstelle_dokumentnummer, fundstelle_datum, fundstelle_dokumentart, fundstelle_herausgeber, fundstelle_id, fundstelle_drucksachetyp, fundstelle_anlagen, fundstelle_anfangsseite, fundstelle_endseite, fundstelle_anfangsquadrant, fundstelle_endquadrant, fundstelle_seite, fundstelle_pdf_url, fundstelle_top, fundstelle_top_zusatz, fundstelle_frage_nummer, fundstelle_verteildatum, created_at, updated_at, fundstelle_xml_url
 FROM vorgangsposition
 WHERE id = ?
 `
@@ -465,13 +468,14 @@ func (q *Queries) GetVorgangsposition(ctx context.Context, id string) (Vorgangsp
 		&i.FundstelleVerteildatum,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.FundstelleXmlUrl,
 	)
 	return i, err
 }
 
 const getVorgangspositionWithAktivitaet = `-- name: GetVorgangspositionWithAktivitaet :many
 SELECT 
-    vp.id, vp.vorgang_id, vp.titel, vp.vorgangsposition, vp.vorgangstyp, vp.typ, vp.dokumentart, vp.datum, vp.aktualisiert, vp.abstract, vp.fortsetzung, vp.gang, vp.nachtrag, vp.aktivitaet_anzahl, vp.kom, vp.ratsdok, vp.sek, vp.zuordnung, vp.fundstelle_dokumentnummer, vp.fundstelle_datum, vp.fundstelle_dokumentart, vp.fundstelle_herausgeber, vp.fundstelle_id, vp.fundstelle_drucksachetyp, vp.fundstelle_anlagen, vp.fundstelle_anfangsseite, vp.fundstelle_endseite, vp.fundstelle_anfangsquadrant, vp.fundstelle_endquadrant, vp.fundstelle_seite, vp.fundstelle_pdf_url, vp.fundstelle_top, vp.fundstelle_top_zusatz, vp.fundstelle_frage_nummer, vp.fundstelle_verteildatum, vp.created_at, vp.updated_at,
+    vp.id, vp.vorgang_id, vp.titel, vp.vorgangsposition, vp.vorgangstyp, vp.typ, vp.dokumentart, vp.datum, vp.aktualisiert, vp.abstract, vp.fortsetzung, vp.gang, vp.nachtrag, vp.aktivitaet_anzahl, vp.kom, vp.ratsdok, vp.sek, vp.zuordnung, vp.fundstelle_dokumentnummer, vp.fundstelle_datum, vp.fundstelle_dokumentart, vp.fundstelle_herausgeber, vp.fundstelle_id, vp.fundstelle_drucksachetyp, vp.fundstelle_anlagen, vp.fundstelle_anfangsseite, vp.fundstelle_endseite, vp.fundstelle_anfangsquadrant, vp.fundstelle_endquadrant, vp.fundstelle_seite, vp.fundstelle_pdf_url, vp.fundstelle_top, vp.fundstelle_top_zusatz, vp.fundstelle_frage_nummer, vp.fundstelle_verteildatum, vp.created_at, vp.updated_at, vp.fundstelle_xml_url,
     aa.aktivitaetsart,
     aa.titel as aktivitaet_titel,
     aa.seite as aktivitaet_seite,
@@ -521,6 +525,7 @@ type GetVorgangspositionWithAktivitaetRow struct {
 	FundstelleVerteildatum    sql.NullString `json:"fundstelle_verteildatum"`
 	CreatedAt                 string         `json:"created_at"`
 	UpdatedAt                 string         `json:"updated_at"`
+	FundstelleXmlUrl          sql.NullString `json:"fundstelle_xml_url"`
 	Aktivitaetsart            sql.NullString `json:"aktivitaetsart"`
 	AktivitaetTitel           sql.NullString `json:"aktivitaet_titel"`
 	AktivitaetSeite           sql.NullString `json:"aktivitaet_seite"`
@@ -575,6 +580,7 @@ func (q *Queries) GetVorgangspositionWithAktivitaet(ctx context.Context, id stri
 			&i.FundstelleVerteildatum,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.FundstelleXmlUrl,
 			&i.Aktivitaetsart,
 			&i.AktivitaetTitel,
 			&i.AktivitaetSeite,
@@ -596,7 +602,7 @@ func (q *Queries) GetVorgangspositionWithAktivitaet(ctx context.Context, id stri
 
 const getVorgangspositionWithBeschlussfassung = `-- name: GetVorgangspositionWithBeschlussfassung :many
 SELECT 
-    vp.id, vp.vorgang_id, vp.titel, vp.vorgangsposition, vp.vorgangstyp, vp.typ, vp.dokumentart, vp.datum, vp.aktualisiert, vp.abstract, vp.fortsetzung, vp.gang, vp.nachtrag, vp.aktivitaet_anzahl, vp.kom, vp.ratsdok, vp.sek, vp.zuordnung, vp.fundstelle_dokumentnummer, vp.fundstelle_datum, vp.fundstelle_dokumentart, vp.fundstelle_herausgeber, vp.fundstelle_id, vp.fundstelle_drucksachetyp, vp.fundstelle_anlagen, vp.fundstelle_anfangsseite, vp.fundstelle_endseite, vp.fundstelle_anfangsquadrant, vp.fundstelle_endquadrant, vp.fundstelle_seite, vp.fundstelle_pdf_url, vp.fundstelle_top, vp.fundstelle_top_zusatz, vp.fundstelle_frage_nummer, vp.fundstelle_verteildatum, vp.created_at, vp.updated_at,
+    vp.id, vp.vorgang_id, vp.titel, vp.vorgangsposition, vp.vorgangstyp, vp.typ, vp.dokumentart, vp.datum, vp.aktualisiert, vp.abstract, vp.fortsetzung, vp.gang, vp.nachtrag, vp.aktivitaet_anzahl, vp.kom, vp.ratsdok, vp.sek, vp.zuordnung, vp.fundstelle_dokumentnummer, vp.fundstelle_datum, vp.fundstelle_dokumentart, vp.fundstelle_herausgeber, vp.fundstelle_id, vp.fundstelle_drucksachetyp, vp.fundstelle_anlagen, vp.fundstelle_anfangsseite, vp.fundstelle_endseite, vp.fundstelle_anfangsquadrant, vp.fundstelle_endquadrant, vp.fundstelle_seite, vp.fundstelle_pdf_url, vp.fundstelle_top, vp.fundstelle_top_zusatz, vp.fundstelle_frage_nummer, vp.fundstelle_verteildatum, vp.created_at, vp.updated_at, vp.fundstelle_xml_url,
     bf.beschlusstenor,
     bf.abstimmungsart,
     bf.mehrheit,
@@ -647,6 +653,7 @@ type GetVorgangspositionWithBeschlussfassungRow struct {
 	FundstelleVerteildatum    sql.NullString `json:"fundstelle_verteildatum"`
 	CreatedAt                 string         `json:"created_at"`
 	UpdatedAt                 string         `json:"updated_at"`
+	FundstelleXmlUrl          sql.NullString `json:"fundstelle_xml_url"`
 	Beschlusstenor            sql.NullString `json:"beschlusstenor"`
 	Abstimmungsart            sql.NullString `json:"abstimmungsart"`
 	Mehrheit                  sql.NullString `json:"mehrheit"`
@@ -703,6 +710,7 @@ func (q *Queries) GetVorgangspositionWithBeschlussfassung(ctx context.Context, i
 			&i.FundstelleVerteildatum,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.FundstelleXmlUrl,
 			&i.Beschlusstenor,
 			&i.Abstimmungsart,
 			&i.Mehrheit,
@@ -726,7 +734,7 @@ func (q *Queries) GetVorgangspositionWithBeschlussfassung(ctx context.Context, i
 
 const getVorgangspositionWithRessort = `-- name: GetVorgangspositionWithRessort :many
 SELECT 
-    vp.id, vp.vorgang_id, vp.titel, vp.vorgangsposition, vp.vorgangstyp, vp.typ, vp.dokumentart, vp.datum, vp.aktualisiert, vp.abstract, vp.fortsetzung, vp.gang, vp.nachtrag, vp.aktivitaet_anzahl, vp.kom, vp.ratsdok, vp.sek, vp.zuordnung, vp.fundstelle_dokumentnummer, vp.fundstelle_datum, vp.fundstelle_dokumentart, vp.fundstelle_herausgeber, vp.fundstelle_id, vp.fundstelle_drucksachetyp, vp.fundstelle_anlagen, vp.fundstelle_anfangsseite, vp.fundstelle_endseite, vp.fundstelle_anfangsquadrant, vp.fundstelle_endquadrant, vp.fundstelle_seite, vp.fundstelle_pdf_url, vp.fundstelle_top, vp.fundstelle_top_zusatz, vp.fundstelle_frage_nummer, vp.fundstelle_verteildatum, vp.created_at, vp.updated_at,
+    vp.id, vp.vorgang_id, vp.titel, vp.vorgangsposition, vp.vorgangstyp, vp.typ, vp.dokumentart, vp.datum, vp.aktualisiert, vp.abstract, vp.fortsetzung, vp.gang, vp.nachtrag, vp.aktivitaet_anzahl, vp.kom, vp.ratsdok, vp.sek, vp.zuordnung, vp.fundstelle_dokumentnummer, vp.fundstelle_datum, vp.fundstelle_dokumentart, vp.fundstelle_herausgeber, vp.fundstelle_id, vp.fundstelle_drucksachetyp, vp.fundstelle_anlagen, vp.fundstelle_anfangsseite, vp.fundstelle_endseite, vp.fundstelle_anfangsquadrant, vp.fundstelle_endquadrant, vp.fundstelle_seite, vp.fundstelle_pdf_url, vp.fundstelle_top, vp.fundstelle_top_zusatz, vp.fundstelle_frage_nummer, vp.fundstelle_verteildatum, vp.created_at, vp.updated_at, vp.fundstelle_xml_url,
     r.titel as ressort_titel,
     vpr.federfuehrend as ressort_federfuehrend
 FROM vorgangsposition vp
@@ -773,6 +781,7 @@ type GetVorgangspositionWithRessortRow struct {
 	FundstelleVerteildatum    sql.NullString `json:"fundstelle_verteildatum"`
 	CreatedAt                 string         `json:"created_at"`
 	UpdatedAt                 string         `json:"updated_at"`
+	FundstelleXmlUrl          sql.NullString `json:"fundstelle_xml_url"`
 	RessortTitel              sql.NullString `json:"ressort_titel"`
 	RessortFederfuehrend      sql.NullInt64  `json:"ressort_federfuehrend"`
 }
@@ -824,6 +833,7 @@ func (q *Queries) GetVorgangspositionWithRessort(ctx context.Context, id string)
 			&i.FundstelleVerteildatum,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.FundstelleXmlUrl,
 			&i.RessortTitel,
 			&i.RessortFederfuehrend,
 		); err != nil {
@@ -842,7 +852,7 @@ func (q *Queries) GetVorgangspositionWithRessort(ctx context.Context, id string)
 
 const getVorgangspositionWithUeberweisung = `-- name: GetVorgangspositionWithUeberweisung :many
 SELECT 
-    vp.id, vp.vorgang_id, vp.titel, vp.vorgangsposition, vp.vorgangstyp, vp.typ, vp.dokumentart, vp.datum, vp.aktualisiert, vp.abstract, vp.fortsetzung, vp.gang, vp.nachtrag, vp.aktivitaet_anzahl, vp.kom, vp.ratsdok, vp.sek, vp.zuordnung, vp.fundstelle_dokumentnummer, vp.fundstelle_datum, vp.fundstelle_dokumentart, vp.fundstelle_herausgeber, vp.fundstelle_id, vp.fundstelle_drucksachetyp, vp.fundstelle_anlagen, vp.fundstelle_anfangsseite, vp.fundstelle_endseite, vp.fundstelle_anfangsquadrant, vp.fundstelle_endquadrant, vp.fundstelle_seite, vp.fundstelle_pdf_url, vp.fundstelle_top, vp.fundstelle_top_zusatz, vp.fundstelle_frage_nummer, vp.fundstelle_verteildatum, vp.created_at, vp.updated_at,
+    vp.id, vp.vorgang_id, vp.titel, vp.vorgangsposition, vp.vorgangstyp, vp.typ, vp.dokumentart, vp.datum, vp.aktualisiert, vp.abstract, vp.fortsetzung, vp.gang, vp.nachtrag, vp.aktivitaet_anzahl, vp.kom, vp.ratsdok, vp.sek, vp.zuordnung, vp.fundstelle_dokumentnummer, vp.fundstelle_datum, vp.fundstelle_dokumentart, vp.fundstelle_herausgeber, vp.fundstelle_id, vp.fundstelle_drucksachetyp, vp.fundstelle_anlagen, vp.fundstelle_anfangsseite, vp.fundstelle_endseite, vp.fundstelle_anfangsquadrant, vp.fundstelle_endquadrant, vp.fundstelle_seite, vp.fundstelle_pdf_url, vp.fundstelle_top, vp.fundstelle_top_zusatz, vp.fundstelle_frage_nummer, vp.fundstelle_verteildatum, vp.created_at, vp.updated_at, vp.fundstelle_xml_url,
     ue.ausschuss,
     ue.ausschuss_kuerzel,
     ue.federfuehrung,
@@ -890,6 +900,7 @@ type GetVorgangspositionWithUeberweisungRow struct {
 	FundstelleVerteildatum    sql.NullString `json:"fundstelle_verteildatum"`
 	CreatedAt                 string         `json:"created_at"`
 	UpdatedAt                 string         `json:"updated_at"`
+	FundstelleXmlUrl          sql.NullString `json:"fundstelle_xml_url"`
 	Ausschuss                 sql.NullString `json:"ausschuss"`
 	AusschussKuerzel          sql.NullString `json:"ausschuss_kuerzel"`
 	Federfuehrung             sql.NullInt64  `json:"federfuehrung"`
@@ -943,6 +954,7 @@ func (q *Queries) GetVorgangspositionWithUeberweisung(ctx context.Context, id st
 			&i.FundstelleVerteildatum,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.FundstelleXmlUrl,
 			&i.Ausschuss,
 			&i.AusschussKuerzel,
 			&i.Federfuehrung,
@@ -963,7 +975,7 @@ func (q *Queries) GetVorgangspositionWithUeberweisung(ctx context.Context, id st
 
 const getVorgangspositionWithUrheber = `-- name: GetVorgangspositionWithUrheber :many
 SELECT 
-    vp.id, vp.vorgang_id, vp.titel, vp.vorgangsposition, vp.vorgangstyp, vp.typ, vp.dokumentart, vp.datum, vp.aktualisiert, vp.abstract, vp.fortsetzung, vp.gang, vp.nachtrag, vp.aktivitaet_anzahl, vp.kom, vp.ratsdok, vp.sek, vp.zuordnung, vp.fundstelle_dokumentnummer, vp.fundstelle_datum, vp.fundstelle_dokumentart, vp.fundstelle_herausgeber, vp.fundstelle_id, vp.fundstelle_drucksachetyp, vp.fundstelle_anlagen, vp.fundstelle_anfangsseite, vp.fundstelle_endseite, vp.fundstelle_anfangsquadrant, vp.fundstelle_endquadrant, vp.fundstelle_seite, vp.fundstelle_pdf_url, vp.fundstelle_top, vp.fundstelle_top_zusatz, vp.fundstelle_frage_nummer, vp.fundstelle_verteildatum, vp.created_at, vp.updated_at,
+    vp.id, vp.vorgang_id, vp.titel, vp.vorgangsposition, vp.vorgangstyp, vp.typ, vp.dokumentart, vp.datum, vp.aktualisiert, vp.abstract, vp.fortsetzung, vp.gang, vp.nachtrag, vp.aktivitaet_anzahl, vp.kom, vp.ratsdok, vp.sek, vp.zuordnung, vp.fundstelle_dokumentnummer, vp.fundstelle_datum, vp.fundstelle_dokumentart, vp.fundstelle_herausgeber, vp.fundstelle_id, vp.fundstelle_drucksachetyp, vp.fundstelle_anlagen, vp.fundstelle_anfangsseite, vp.fundstelle_endseite, vp.fundstelle_anfangsquadrant, vp.fundstelle_endquadrant, vp.fundstelle_seite, vp.fundstelle_pdf_url, vp.fundstelle_top, vp.fundstelle_top_zusatz, vp.fundstelle_frage_nummer, vp.fundstelle_verteildatum, vp.created_at, vp.updated_at, vp.fundstelle_xml_url,
     u.bezeichnung as urheber_bezeichnung,
     u.titel as urheber_titel,
     vpu.rolle as urheber_rolle,
@@ -1012,6 +1024,7 @@ type GetVorgangspositionWithUrheberRow struct {
 	FundstelleVerteildatum    sql.NullString `json:"fundstelle_verteildatum"`
 	CreatedAt                 string         `json:"created_at"`
 	UpdatedAt                 string         `json:"updated_at"`
+	FundstelleXmlUrl          sql.NullString `json:"fundstelle_xml_url"`
 	UrheberBezeichnung        sql.NullString `json:"urheber_bezeichnung"`
 	UrheberTitel              sql.NullString `json:"urheber_titel"`
 	UrheberRolle              sql.NullString `json:"urheber_rolle"`
@@ -1065,6 +1078,7 @@ func (q *Queries) GetVorgangspositionWithUrheber(ctx context.Context, id string)
 			&i.FundstelleVerteildatum,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.FundstelleXmlUrl,
 			&i.UrheberBezeichnung,
 			&i.UrheberTitel,
 			&i.UrheberRolle,
@@ -1084,7 +1098,7 @@ func (q *Queries) GetVorgangspositionWithUrheber(ctx context.Context, id string)
 }
 
 const listVorgangspositionen = `-- name: ListVorgangspositionen :many
-SELECT id, vorgang_id, titel, vorgangsposition, vorgangstyp, typ, dokumentart, datum, aktualisiert, abstract, fortsetzung, gang, nachtrag, aktivitaet_anzahl, kom, ratsdok, sek, zuordnung, fundstelle_dokumentnummer, fundstelle_datum, fundstelle_dokumentart, fundstelle_herausgeber, fundstelle_id, fundstelle_drucksachetyp, fundstelle_anlagen, fundstelle_anfangsseite, fundstelle_endseite, fundstelle_anfangsquadrant, fundstelle_endquadrant, fundstelle_seite, fundstelle_pdf_url, fundstelle_top, fundstelle_top_zusatz, fundstelle_frage_nummer, fundstelle_verteildatum, created_at, updated_at
+SELECT id, vorgang_id, titel, vorgangsposition, vorgangstyp, typ, dokumentart, datum, aktualisiert, abstract, fortsetzung, gang, nachtrag, aktivitaet_anzahl, kom, ratsdok, sek, zuordnung, fundstelle_dokumentnummer, fundstelle_datum, fundstelle_dokumentart, fundstelle_herausgeber, fundstelle_id, fundstelle_drucksachetyp, fundstelle_anlagen, fundstelle_anfangsseite, fundstelle_endseite, fundstelle_anfangsquadrant, fundstelle_endquadrant, fundstelle_seite, fundstelle_pdf_url, fundstelle_top, fundstelle_top_zusatz, fundstelle_frage_nummer, fundstelle_verteildatum, created_at, updated_at, fundstelle_xml_url
 FROM vorgangsposition
 WHERE 
     (? IS NULL OR aktualisiert >= ?)
@@ -1186,6 +1200,7 @@ func (q *Queries) ListVorgangspositionen(ctx context.Context, arg ListVorgangspo
 			&i.FundstelleVerteildatum,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.FundstelleXmlUrl,
 		); err != nil {
 			return nil, err
 		}
@@ -1209,7 +1224,7 @@ SET
     aktivitaet_anzahl = ?,
     updated_at = datetime('now')
 WHERE id = ?
-RETURNING id, vorgang_id, titel, vorgangsposition, vorgangstyp, typ, dokumentart, datum, aktualisiert, abstract, fortsetzung, gang, nachtrag, aktivitaet_anzahl, kom, ratsdok, sek, zuordnung, fundstelle_dokumentnummer, fundstelle_datum, fundstelle_dokumentart, fundstelle_herausgeber, fundstelle_id, fundstelle_drucksachetyp, fundstelle_anlagen, fundstelle_anfangsseite, fundstelle_endseite, fundstelle_anfangsquadrant, fundstelle_endquadrant, fundstelle_seite, fundstelle_pdf_url, fundstelle_top, fundstelle_top_zusatz, fundstelle_frage_nummer, fundstelle_verteildatum, created_at, updated_at
+RETURNING id, vorgang_id, titel, vorgangsposition, vorgangstyp, typ, dokumentart, datum, aktualisiert, abstract, fortsetzung, gang, nachtrag, aktivitaet_anzahl, kom, ratsdok, sek, zuordnung, fundstelle_dokumentnummer, fundstelle_datum, fundstelle_dokumentart, fundstelle_herausgeber, fundstelle_id, fundstelle_drucksachetyp, fundstelle_anlagen, fundstelle_anfangsseite, fundstelle_endseite, fundstelle_anfangsquadrant, fundstelle_endquadrant, fundstelle_seite, fundstelle_pdf_url, fundstelle_top, fundstelle_top_zusatz, fundstelle_frage_nummer, fundstelle_verteildatum, created_at, updated_at, fundstelle_xml_url
 `
 
 type UpdateVorgangspositionParams struct {
@@ -1267,6 +1282,7 @@ func (q *Queries) UpdateVorgangsposition(ctx context.Context, arg UpdateVorgangs
 		&i.FundstelleVerteildatum,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.FundstelleXmlUrl,
 	)
 	return i, err
 }

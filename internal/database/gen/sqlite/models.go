@@ -38,6 +38,7 @@ type Aktivitaet struct {
 	FundstelleVerteildatum    sql.NullString `json:"fundstelle_verteildatum"`
 	CreatedAt                 string         `json:"created_at"`
 	UpdatedAt                 string         `json:"updated_at"`
+	FundstelleXmlUrl          sql.NullString `json:"fundstelle_xml_url"`
 }
 
 type AktivitaetAnzeige struct {
@@ -120,6 +121,7 @@ type Drucksache struct {
 	FundstelleVerteildatum    sql.NullString `json:"fundstelle_verteildatum"`
 	CreatedAt                 string         `json:"created_at"`
 	UpdatedAt                 string         `json:"updated_at"`
+	FundstelleXmlUrl          sql.NullString `json:"fundstelle_xml_url"`
 }
 
 type DrucksacheAutorAnzeige struct {
@@ -428,6 +430,7 @@ type Plenarprotokoll struct {
 	FundstelleTopZusatz       sql.NullString `json:"fundstelle_top_zusatz"`
 	CreatedAt                 string         `json:"created_at"`
 	UpdatedAt                 string         `json:"updated_at"`
+	FundstelleXmlUrl          sql.NullString `json:"fundstelle_xml_url"`
 }
 
 type PlenarprotokollText struct {
@@ -584,6 +587,7 @@ type Vorgangsposition struct {
 	FundstelleVerteildatum    sql.NullString `json:"fundstelle_verteildatum"`
 	CreatedAt                 string         `json:"created_at"`
 	UpdatedAt                 string         `json:"updated_at"`
+	FundstelleXmlUrl          sql.NullString `json:"fundstelle_xml_url"`
 }
 
 type VorgangspositionMitberaten struct {
