@@ -349,32 +349,14 @@ The `sync-all` command runs all sync commands in sequence:
 ### Query Commands
 
 ```bash
-# List all known laws (Gesetze) from database
-./bin/list-gesetze
+# Query laws from database using SQL
+sqlite3 dip.clean.db "SELECT * FROM vorgang WHERE vorgangstyp LIKE '%Gesetzgebung%' LIMIT 10;"
 
 # Filter by Wahlperiode
-./bin/list-gesetze --wahlperiode 20
+sqlite3 dip.clean.db "SELECT * FROM vorgang WHERE wahlperiode = 20 AND vorgangstyp LIKE '%Gesetzgebung%';"
 
-# Filter by status
-./bin/list-gesetze --beratungsstand "Verkündet"
-
-# Filter by subject area
-./bin/list-gesetze --sachgebiet "Umwelt"
-
-# Only show verkündet (enacted) laws
-./bin/list-gesetze --verkuendet
-
-# Only show laws in kraft (in force)
-./bin/list-gesetze --inkraft
-
-# JSON output
-./bin/list-gesetze --json
-
-# Pagination
-./bin/list-gesetze --limit 10 --offset 0
-
-# Combine filters
-./bin/list-gesetze --wahlperiode 20 --verkuendet --sachgebiet "Verkehr"
+# Use the dip CLI for API queries
+./bin/dip vorgang list --filter 'vorgangstyp:Gesetzgebung' --limit 10
 ```
 
 ### Example Workflows
@@ -385,8 +367,8 @@ The `sync-all` command runs all sync commands in sequence:
 # 1. Sync all data (can be interrupted and resumed)
 ./bin/sync-all
 
-# 2. Query the data
-./bin/list-gesetze --wahlperiode 20 --json
+# 2. Query the data using SQL
+sqlite3 dip.clean.db "SELECT * FROM vorgang WHERE wahlperiode = 20 AND vorgangstyp LIKE '%Gesetzgebung%' LIMIT 10;"
 ```
 
 #### Incremental Updates
