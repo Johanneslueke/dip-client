@@ -1,0 +1,26 @@
+version: "2"
+sql:
+  - name: "postgres"
+    schema: "migrations/postgres"
+    queries: "queries/postgres"
+    engine: "postgresql"
+    gen:
+      go:
+        package: "db"
+        out: "gen/postgres"
+        emit_json_tags: true
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false
+  - name: "sqlite"
+    schema: "migrations/sqlite"
+    queries: "queries/sqlite"
+    engine: "sqlite"
+    gen:
+      go:
+        package: "db"
+        out: "gen/sqlite"
+        emit_json_tags: true
+        emit_prepared_queries: false
+        emit_interface: true
+        emit_exact_table_names: false

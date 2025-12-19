@@ -198,61 +198,7 @@ export DIP_API_KEY="your-api-key"
 
 ### Individual Endpoint Tools
 
-Individual command-line tools are available for each endpoint. Each tool provides focused functionality for a specific resource type.
-
-#### Available Tools
-
-**Get Operations** (retrieve single resource by ID):
-- `get-aktivitaet` - Get a single Aktivität
-- `get-drucksache` - Get a single Drucksache
-- `get-drucksache-text` - Get a single Drucksache text
-- `get-person` - Get a single Person
-- `get-plenarprotokoll` - Get a single Plenarprotokoll
-- `get-plenarprotokoll-text` - Get a single Plenarprotokoll text
-- `get-vorgang` - Get a single Vorgang
-- `get-vorgangsposition` - Get a single Vorgangsposition
-
-**List Operations** (retrieve multiple resources):
-- `list-aktivitaeten` - List all Aktivitäten
-- `list-drucksachen` - List all Drucksachen
-- `list-drucksache-texte` - List all Drucksache texts
-- `list-personen` - List all Personen
-- `list-plenarprotokolle` - List all Plenarprotokolle
-- `list-plenarprotokoll-texte` - List all Plenarprotokoll texts
-- `list-vorgaenge` - List all Vorgänge
-- `list-vorgangspositionen` - List all Vorgangspositionen
-
-#### Usage Examples
-
-```bash
-# Get single resources by ID
-go run ./cmd/get-aktivitaet -key YOUR_KEY -id 318274
-go run ./cmd/get-drucksache -key YOUR_KEY -id 283847
-go run ./cmd/get-person -key YOUR_KEY -id 456
-go run ./cmd/get-vorgang -key YOUR_KEY -id 123
-
-# List resources
-go run ./cmd/list-vorgaenge -key YOUR_KEY
-go run ./cmd/list-aktivitaeten -key YOUR_KEY
-go run ./cmd/list-drucksachen -key YOUR_KEY
-
-# Using environment variable for API key
-export DIP_API_KEY="your-api-key"
-go run ./cmd/list-plenarprotokolle
-go run ./cmd/get-vorgangsposition -id 789
-
-# Build individual tools
-go build -o get-vorgang ./cmd/get-vorgang
-./get-vorgang -key YOUR_KEY -id 123
-```
-
-#### Common Flags (Individual Tools)
-
-- `-key`: API key (or use `DIP_API_KEY` environment variable)
-- `-url`: API base URL (default: `https://search.dip.bundestag.de/api/v1`)
-- `-id`: Resource ID (required for get-* tools)
-
-**Note:** Individual tools provide basic functionality. For advanced filtering and pagination, use the unified `dip` CLI tool.
+**Note:** For querying the DIP API, use the unified `dip` CLI tool which provides comprehensive filtering and pagination options.
 
 ## Testing
 
@@ -293,22 +239,19 @@ go test -short ./pkg/dip-client
 .
 ├── cmd/                           # Command-line tools
 │   ├── dip/                       # Unified CLI tool
-│   ├── get-aktivitaet/            # Individual endpoint tools
-│   ├── list-aktivitaeten/
-│   ├── get-drucksache/
-│   ├── list-drucksachen/
-│   ├── get-drucksache-text/
-│   ├── list-drucksache-texte/
-│   ├── get-person/
-│   ├── list-personen/
-│   ├── get-plenarprotokoll/
-│   ├── list-plenarprotokolle/
-│   ├── get-plenarprotokoll-text/
-│   ├── list-plenarprotokoll-texte/
-│   ├── get-vorgang/
-│   ├── list-vorgaenge/
-│   ├── get-vorgangsposition/
-│   └── list-vorgangspositionen/
+│   ├── import-mdb-stammdaten/     # Import MdB biographical data
+│   ├── link-person-mdb/           # Link DIP persons with MdB data
+│   ├── sync-aktivitaeten/         # Sync tools for each entity type
+│   ├── sync-drucksachen/
+│   ├── sync-drucksache-texte/
+│   ├── sync-personen/
+│   ├── sync-plenarprotokolle/
+│   ├── sync-plenarprotokoll-texte/
+│   ├── sync-vorgaenge/
+│   ├── sync-vorgangspositionen/
+│   ├── sync-missing-vorgaenge/
+│   ├── sync-all/                  # Sync all entities
+│   └── validate-xml-dtd/          # XML validation tool
 ├── internal/gen/                  # Generated OpenAPI client code
 │   ├── client.gen.go
 │   └── models.gen.go
@@ -327,9 +270,11 @@ To regenerate the client from the OpenAPI spec:
 
 ```bash
 go generate ./...
+go run ./cmd/sync-all --skip "personen, plenarprotokoll-texte,drucksache-texte" --key OSOegLs.PR2lwJ1dwCeje9vTj7FPOt3hvpYKtwKkhw  --db dip.clean.db
 ```
 
 The generation uses `oapi-codegen` with configuration files:
+
 - `cfg_client.yaml` - Client generation settings
 - `cfg_models.yaml` - Model generation settings
 

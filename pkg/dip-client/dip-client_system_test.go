@@ -168,9 +168,10 @@ func TestSystem_WithParameters(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("WahlperiodeFilter", func(t *testing.T) {
-		wahlperiode := dipclient.WahlperiodeFilter(20)
+		filter := make (dipclient.WahlperiodeFilter, 1)
+		filter[0] = 20
 		params := &dipclient.GetVorgangListParams{
-			FWahlperiode: &wahlperiode,
+			FWahlperiode: &filter,
 		}
 
 		result, err := client.GetVorgangList(ctx, params)
@@ -195,9 +196,10 @@ func TestSystem_WithParameters(t *testing.T) {
 	})
 
 	t.Run("CursorPagination", func(t *testing.T) {
-		wahlperiode := dipclient.WahlperiodeFilter(21)
+		filter := make(dipclient.WahlperiodeFilter, 1)
+		filter[0] = 21
 		params := &dipclient.GetAktivitaetListParams{
-			FWahlperiode: &wahlperiode,
+			FWahlperiode: &filter,
 		}
 
 		// Get first page
@@ -238,11 +240,12 @@ func TestSystem_WithParameters(t *testing.T) {
 	})
 
 	t.Run("MultipleFilters", func(t *testing.T) {
-		wahlperiode := dipclient.WahlperiodeFilter(21)
+		filter := make(dipclient.WahlperiodeFilter, 1)
+		filter[0] = 21
 		format := dipclient.GetDrucksacheListParamsFormat("json")
 
 		params := &dipclient.GetDrucksacheListParams{
-			FWahlperiode: &wahlperiode,
+			FWahlperiode: &filter,
 			Format:       &format,
 		}
 
@@ -266,9 +269,10 @@ func TestSystem_WithParameters(t *testing.T) {
 
 	t.Run("EmptyResultsWithFilter", func(t *testing.T) {
 		// Use a very old Wahlperiode that likely has no results
-		wahlperiode := dipclient.WahlperiodeFilter(1)
+		filter := make(dipclient.WahlperiodeFilter, 1)
+		filter[0] = 1
 		params := &dipclient.GetAktivitaetListParams{
-			FWahlperiode: &wahlperiode,
+			FWahlperiode: &filter,
 		}
 
 		result, err := client.GetAktivitaetList(ctx, params)

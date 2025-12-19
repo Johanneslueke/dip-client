@@ -9,8 +9,10 @@
 *.test
 
 # Output of the go coverage tool, specifically when used with LiteIDE
-*.out
-
+*.out 
+.checkpoints
+.failed
+#
  
 
 # Dependency directories
@@ -42,3 +44,6 @@ build/
 # Temporary files
 tmp/
 temp/
+
+
+*.db

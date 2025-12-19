@@ -1,0 +1,6 @@
+package client
+
+type BadRequestResponseCode int
+type NotFoundResponseCode int
+type UnauthorizedResponseCode int
+type UnauthorizedResponseMessage string

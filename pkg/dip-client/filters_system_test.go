@@ -27,9 +27,10 @@ func TestSystem_AllFilters(t *testing.T) {
 
 	t.Run("IntegerFilters", func(t *testing.T) {
 		// Test FId filter (int type)
-		idFilter := dipclient.IDFilter(318274)
+		filter := make(dipclient.IDFilter, 1)
+		filter[0] = 318274
 		result, err := client.GetAktivitaetList(ctx, &dipclient.GetAktivitaetListParams{
-			FId: &idFilter,
+			FId: &filter,
 		})
 		if err != nil {
 			t.Fatalf("FId filter failed: %v", err)
@@ -45,9 +46,10 @@ func TestSystem_AllFilters(t *testing.T) {
 
 	t.Run("StringFilters", func(t *testing.T) {
 		// Test FDokumentnummer filter (string type)
-		docNum := dipclient.DokumentnummerFilter("19/24359")
+		filter := make(dipclient.DokumentnummerFilter, 1)
+		filter[0] = "19/24359"
 		result, err := client.GetDrucksacheList(ctx, &dipclient.GetDrucksacheListParams{
-			FDokumentnummer: &docNum,
+			FDokumentnummer: &filter,
 		})
 		if err != nil {
 			t.Fatalf("FDokumentnummer filter failed: %v", err)
@@ -60,11 +62,13 @@ func TestSystem_AllFilters(t *testing.T) {
 
 	t.Run("MultipleFilters", func(t *testing.T) {
 		// Test combining multiple filters
-		wahlperiode := dipclient.WahlperiodeFilter(20)
+		
+		wpFilter := make(dipclient.WahlperiodeFilter, 1)
+		wpFilter[0] = 20
 		drucksachetyp := dipclient.DrucksachtypFilter("Antrag")
 
 		result, err := client.GetVorgangList(ctx, &dipclient.GetVorgangListParams{
-			FWahlperiode:   &wahlperiode,
+			FWahlperiode:   &wpFilter,
 			FDrucksachetyp: &drucksachetyp,
 		})
 		if err != nil {
@@ -78,9 +82,10 @@ func TestSystem_AllFilters(t *testing.T) {
 
 	t.Run("GestaFilter", func(t *testing.T) {
 		// Test GESTA filter (unique to Vorgang)
-		gesta := dipclient.GestaFilter("N001")
+		filter := make(dipclient.GestaFilter, 1)
+		filter[0] = "N001"
 		result, err := client.GetVorgangList(ctx, &dipclient.GetVorgangListParams{
-			FGesta: &gesta,
+			FGesta: &filter,
 		})
 		if err != nil {
 			t.Fatalf("FGesta filter failed: %v", err)
@@ -94,11 +99,12 @@ func TestSystem_AllFilters(t *testing.T) {
 	t.Run("DokumentartEnumFilter", func(t *testing.T) {
 		// Test Dokumentart enum filter (unique to certain endpoints)
 		dokumentart := dipclient.GetAktivitaetListParamsFDokumentart("Drucksache")
-		wahlperiode := dipclient.WahlperiodeFilter(20)
+		filter := make(dipclient.WahlperiodeFilter, 1)
+		filter[0] = 20
 
 		result, err := client.GetAktivitaetList(ctx, &dipclient.GetAktivitaetListParams{
 			FDokumentart: &dokumentart,
-			FWahlperiode: &wahlperiode,
+			FWahlperiode: &filter,
 		})
 		if err != nil {
 			t.Fatalf("FDokumentart filter failed: %v", err)
@@ -111,12 +117,16 @@ func TestSystem_AllFilters(t *testing.T) {
 
 	t.Run("EndpointSpecificFilters", func(t *testing.T) {
 		// Verify that DrucksacheText doesn't accept FDrucksache (should use FId instead)
-		idFilter := dipclient.IDFilter(306952)
-		wahlperiode := dipclient.WahlperiodeFilter(20)
+		
+		idfilter := make(dipclient.IDFilter, 1)
+		idfilter[0] = 306952
+
+		wpFilter := make(dipclient.WahlperiodeFilter, 1)
+		wpFilter[0] = 20 
 
 		result, err := client.GetDrucksacheTextList(ctx, &dipclient.GetDrucksacheTextListParams{
-			FId:          &idFilter,
-			FWahlperiode: &wahlperiode,
+			FId:          &idfilter,
+			FWahlperiode: &wpFilter,
 		})
 		if err != nil {
 			t.Fatalf("DrucksacheText with FId failed: %v", err)
@@ -124,6 +134,6 @@ func TestSystem_AllFilters(t *testing.T) {
 		if result == nil {
 			t.Fatal("Expected non-nil result")
 		}
-		t.Logf("Found %d drucksache text(s) with FId=%d", len(result.Documents), idFilter)
+		t.Logf("Found %d drucksache text(s) with FId=%d", len(result.Documents), idfilter[0])
 	})
 }

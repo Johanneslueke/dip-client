@@ -1,0 +1,686 @@
+separator                                                   
+------------------------------------------------------------
+=========================================                   
+title                                                       
+------------------------------------------------------------
+PART 1: FDP ACTIVITY BREAKDOWN BY TYPE                      
+separator                                                   
+------------------------------------------------------------
+=========================================                   
+blank                                                       
+------------------------------------------------------------
+                                                            
+Activity Type                                                 Count       % of FDP
+------------------------------------------------------------  ----------  --------
+Kleine Anfrage                                                155481      60.85   
+Antrag                                                        52870       20.69   
+Frage                                                         9368        3.67    
+Entschließungsantrag                                          9337        3.65    
+Rede                                                          7576        2.97    
+Änderungsantrag                                               5956        2.33    
+Gesetzentwurf                                                 5763        2.26    
+Berichterstattung                                             4360        1.71    
+Große Anfrage                                                 1539        0.6     
+Rede (zu Protokoll gegeben)                                   1011        0.4     
+Zwischenfrage                                                 864         0.34    
+Schriftliche Erklärung gem. § 31 Geschäftsordnung BT          617         0.24    
+Zusatzfrage                                                   424         0.17    
+Zur Geschäftsordnung BT                                       161         0.06    
+Kurzintervention                                              92          0.04    
+blank                                                       
+------------------------------------------------------------
+                                                            
+separator                                                   
+------------------------------------------------------------
+=========================================                   
+title                                                       
+------------------------------------------------------------
+PART 2: TOP 50 SUBJECT TERMS IN FDP QUESTIONS (WP19)        
+separator                                                   
+------------------------------------------------------------
+=========================================                   
+blank                                                       
+------------------------------------------------------------
+                                                            
+Subject Term                                                  Questions   % of FDP
+------------------------------------------------------------  ----------  --------
+Bundesmittel                                                  17260       13.01   
+COVID-19                                                      14841       11.19   
+Programm der Bundesregierung                                  9776        7.37    
+Gesetzgebung                                                  6462        4.87    
+Personalausstattung                                           6443        4.86    
+Digitalisierung                                               6415        4.84    
+Seuchenbekämpfung                                             4585        3.46    
+Evaluation                                                    4282        3.23    
+Externe Beratung                                              4130        3.11    
+Klimaschutz                                                   4126        3.11    
+Entwicklungszusammenarbeit                                    3168        2.39    
+Informationssicherheit                                        3153        2.38    
+Studie                                                        3022        2.28    
+Wirtschaftsförderung                                          2998        2.26    
+Datenschutz                                                   2939        2.22    
+Besteuerungsverfahren                                         2919        2.2     
+Baumaßnahme                                                   2872        2.17    
+Klein- und Mittelunternehmen                                  2836        2.14    
+Bundesministerium                                             2817        2.12    
+Bausanierung                                                  2797        2.11    
+Verkehrsinvestition                                           2789        2.1     
+Gesetzesfolgenabschätzung                                     2711        2.04    
+Internationale Zusammenarbeit                                 2655        2.0     
+Forschungsprojekt                                             2534        1.91    
+Politikberatung                                               2518        1.9     
+Forschungspolitik                                             2375        1.79    
+Internet                                                      2369        1.79    
+Finanzdienstleistungsaufsicht                                 2290        1.73    
+Bahnstrecke                                                   2238        1.69    
+Gutachten                                                     2230        1.68    
+Informations- und Kommunikationstechnik                       2198        1.66    
+Baukosten                                                     2198        1.66    
+Verbraucherschutz                                             2185        1.65    
+Beschaffung                                                   2170        1.64    
+Öffentlichkeitsarbeit der Bundesregierung                     2163        1.63    
+Luftreinhaltung                                               2157        1.63    
+Nachhaltige Entwicklung                                       2148        1.62    
+Kredit                                                        2128        1.6     
+Personenbezogene Daten                                        2101        1.58    
+Bank                                                          2085        1.57    
+Richtlinie der EU                                             2082        1.57    
+Forschungsfinanzierung                                        2025        1.53    
+Steueraufkommen                                               2020        1.52    
+Kulturförderung                                               2012        1.52    
+Gremium                                                       1997        1.51    
+Datenerhebung                                                 1969        1.48    
+Kulturelle Bildung                                            1958        1.48    
+Finanzdienstleistung                                          1946        1.47    
+Wettbewerb                                                    1937        1.46    
+Schienenverkehr                                               1919        1.45    
+blank                                                       
+------------------------------------------------------------
+                                                            
+separator                                                   
+------------------------------------------------------------
+=========================================                   
+title                                                       
+------------------------------------------------------------
+PART 3: GEOGRAPHIC FOCUS OF FDP QUESTIONS (WP19)            
+separator                                                   
+------------------------------------------------------------
+=========================================                   
+blank                                                       
+------------------------------------------------------------
+                                                            
+Country/Region                                                Questions   % of FDP
+------------------------------------------------------------  ----------  --------
+EU-Staaten                                                    3288        2.48    
+China                                                         2564        1.93    
+Großbritannien                                                2458        1.85    
+Berlin                                                        1711        1.29    
+Frankreich                                                    1596        1.2     
+Russland                                                      1325        1.0     
+Saarland                                                      1249        0.94    
+USA                                                           1151        0.87    
+Brandenburg                                                   1003        0.76    
+Afrika                                                        986         0.74    
+Sachsen-Anhalt                                                876         0.66    
+Nordrhein-Westfalen                                           863         0.65    
+Hamburg                                                       837         0.63    
+Sachsen                                                       764         0.58    
+Thüringen                                                     731         0.55    
+Bayern                                                        697         0.53    
+Baden-Württemberg                                             676         0.51    
+Österreich                                                    582         0.44    
+Entwicklungsländer                                            558         0.42    
+Niederlande                                                   467         0.35    
+Italien                                                       462         0.35    
+Türkei                                                        458         0.35    
+Schweiz                                                       458         0.35    
+Hessen                                                        455         0.34    
+Niedersachsen                                                 424         0.32    
+Lateinamerika                                                 407         0.31    
+Polen                                                         402         0.3     
+Israel                                                        382         0.29    
+Karibische Staaten                                            371         0.28    
+Ostsee                                                        351         0.26    
+Schwellenländer                                               350         0.26    
+Indien                                                        350         0.26    
+Rhein                                                         333         0.25    
+Mecklenburg-Vorpommern                                        326         0.25    
+Serbien                                                       316         0.24    
+Nordsee                                                       298         0.22    
+Mitteldeutschland                                             295         0.22    
+München                                                       287         0.22    
+Afghanistan                                                   285         0.21    
+Rheintal                                                      275         0.21    
+blank                                                       
+------------------------------------------------------------
+                                                            
+separator                                                   
+------------------------------------------------------------
+=========================================                   
+title                                                       
+------------------------------------------------------------
+PART 4: INSTITUTIONS TARGETED BY FDP QUESTIONS (WP19)       
+separator                                                   
+------------------------------------------------------------
+=========================================                   
+blank                                                       
+------------------------------------------------------------
+                                                            
+Institution                                                   Questions   % of FDP
+------------------------------------------------------------  ----------  --------
+Europäische Union                                             6306        4.75    
+
+Deutsche Bahn                                                 3428        2.58    
+
+Bundesanstalt für Finanzdienstleistungsaufsicht               2631        1.98    
+
+Bundeswehr                                                    2463        1.86    
+
+Bundespolizei                                                 1553        1.17    
+
+KfW-Bankengruppe                                              1446        1.09    
+
+Bundesministerium der Finanzen                                1337        1.01    
+
+Wirecard                                                      1247        0.94    
+
+Bundesregierung                                               925         0.7     
+
+Europäische Zentralbank                                       845         0.64    
+
+Bundesministerium für Verkehr und digitale Infrastruktur      841         0.63    
+
+Bundesministerium für Bildung und Forschung                   737         0.56    
+
+Auswärtiges Amt                                               686         0.52    
+
+Rat der Europäischen Union                                    680         0.51    
+
+Bundesministerium für Gesundheit                              654         0.49    
+
+Bundesministerium für Wirtschaft und Energie                  615         0.46    
+
+Bundesrechnungshof                                            614         0.46    
+
+Europäische Kommission                                        560         0.42    
+
+Bundesministerium der Justiz und für Verbraucherschutz        560         0.42    
+
+Bundesamt für Sicherheit in der Informationstechnik           542         0.41    
+
+Bundesverfassungsgericht                                      539         0.41    
+
+Vereinte Nationen                                             538         0.41    
+
+Bundesministerium der Verteidigung                            514         0.39    
+
+Bundesanstalt für Immobilienaufgaben                          513         0.39    
+
+Die Autobahn GmbH des Bundes                                  500         0.38    
+
+Bundesministerium für Familie, Senioren, Frauen und Jugend    482         0.36    
+
+Bundesministerium für wirtschaftliche Zusammenarbeit und Ent  480         0.36    
+wicklung                                                                          
+
+Bundesministerium für Umwelt, Naturschutz und nukleare Siche  468         0.35    
+rheit                                                                             
+
+Bundesagentur für Arbeit                                      468         0.35    
+
+Kraftfahrt-Bundesamt                                          447         0.34    
+
+Bundesministerium des Innern, für Bau und Heimat              422         0.32    
+
+Deutsche Marine                                               419         0.32    
+
+DFS Deutsche Flugsicherung                                    399         0.3     
+
+NATO                                                          396         0.3     
+
+Bundesministerium für Arbeit und Soziales                     394         0.3     
+
+Weltgesundheitsorganisation                                   382         0.29    
+
+OECD                                                          372         0.28    
+
+Financial Intelligence Unit Deutschland                       368         0.28    
+
+Wasserstraßen- und Schifffahrtsverwaltung des Bundes          359         0.27    
+
+Europäischer Gerichtshof                                      356         0.27    
+blank                                                       
+------------------------------------------------------------
+                                                            
+separator                                                   
+------------------------------------------------------------
+=========================================                   
+title                                                       
+------------------------------------------------------------
+PART 5: FDP TOPIC EVOLUTION ACROSS WAHLPERIODEN             
+separator                                                   
+------------------------------------------------------------
+=========================================                   
+blank                                                       
+------------------------------------------------------------
+                                                            
+section                                                     
+------------------------------------------------------------
+--- Top 20 Topics WP14 (1998-2002) ---                      
+blank                                                       
+------------------------------------------------------------
+                                                            
+Subject Term                                                  Count     
+------------------------------------------------------------  ----------
+Umweltschutz                                                  1000      
+Schifffahrt                                                   467       
+Landwirtschaft                                                402       
+Gesundheit                                                    384       
+Straßenverkehr                                                331       
+Kultur                                                        322       
+Rechtsangleichung in der EU                                   317       
+Steuerpolitik                                                 298       
+Recht                                                         268       
+Verbraucher                                                   263       
+Energiepolitik                                                247       
+Bildungspolitik                                               245       
+Gesetzgebung                                                  230       
+Außenwirtschaft                                               221       
+Kernenergie                                                   217       
+Internet                                                      211       
+Ausländer                                                     208       
+Bundesbehörde                                                 207       
+Verteidigung                                                  199       
+Gebietskörperschaft                                           194       
+blank                                                       
+------------------------------------------------------------
+                                                            
+section                                                     
+------------------------------------------------------------
+--- Top 20 Topics WP15 (2002-2005) ---                      
+blank                                                       
+------------------------------------------------------------
+                                                            
+Subject Term                                                  Count     
+------------------------------------------------------------  ----------
+Umweltschutz                                                  1796      
+Landwirtschaft                                                1026      
+Gesundheit                                                    893       
+Energiepolitik                                                884       
+Bürokratie                                                    883       
+Rechtsangleichung in der EU                                   797       
+Straßenverkehr                                                787       
+Bildungspolitik                                               738       
+Recht                                                         698       
+Berufsausbildung                                              656       
+Gesetzgebung                                                  580       
+Steuerpolitik                                                 564       
+Beschäftigung                                                 498       
+Bundesbehörde                                                 480       
+Verbraucher                                                   469       
+Arbeit                                                        464       
+Innere Sicherheit                                             439       
+Wirtschaftspolitik                                            402       
+Datenschutz                                                   381       
+Gebietskörperschaft                                           356       
+blank                                                       
+------------------------------------------------------------
+                                                            
+section                                                     
+------------------------------------------------------------
+--- Top 20 Topics WP19 (2017-2021) ---                      
+blank                                                       
+------------------------------------------------------------
+                                                            
+Subject Term                                                  Count     
+------------------------------------------------------------  ----------
+Bundesmittel                                                  17260     
+COVID-19                                                      14841     
+Programm der Bundesregierung                                  9776      
+Gesetzgebung                                                  6462      
+Personalausstattung                                           6443      
+Digitalisierung                                               6415      
+Seuchenbekämpfung                                             4585      
+Evaluation                                                    4282      
+Externe Beratung                                              4130      
+Klimaschutz                                                   4126      
+Entwicklungszusammenarbeit                                    3168      
+Informationssicherheit                                        3153      
+Studie                                                        3022      
+Wirtschaftsförderung                                          2998      
+Datenschutz                                                   2939      
+Besteuerungsverfahren                                         2919      
+Baumaßnahme                                                   2872      
+Klein- und Mittelunternehmen                                  2836      
+Bundesministerium                                             2817      
+Bausanierung                                                  2797      
+blank                                                       
+------------------------------------------------------------
+                                                            
+separator                                                   
+------------------------------------------------------------
+=========================================                   
+title                                                       
+------------------------------------------------------------
+PART 6: COVID-19 FOCUS (WP19)                               
+separator                                                   
+------------------------------------------------------------
+=========================================                   
+blank                                                       
+------------------------------------------------------------
+                                                            
+stat                                                        
+------------------------------------------------------------
+Total COVID-19 related questions: 15120                     
+blank                                                       
+------------------------------------------------------------
+                                                            
+COVID-19 Related Topic                                        Questions 
+------------------------------------------------------------  ----------
+COVID-19                                                      14841     
+Seuchenbekämpfung                                             4585      
+Wirtschaftsförderung                                          2337      
+Bundesmittel                                                  2287      
+Gesundheitsschutz                                             1378      
+Test                                                          1322      
+Programm der Bundesregierung                                  1242      
+Epidemie                                                      1209      
+Impfstoff                                                     1008      
+Insolvenz                                                     1006      
+Impfung                                                       968       
+Diagnose                                                      916       
+Kredit                                                        821       
+Beschaffung                                                   748       
+Unternehmen                                                   645       
+Schutzausrüstung                                              632       
+Kind                                                          578       
+Entwicklungszusammenarbeit                                    578       
+Personalausstattung                                           545       
+Mittelstandspolitik                                           545       
+Länder der Bundesrepublik Deutschland                         539       
+Öffentlichkeitsarbeit der Bundesregierung                     534       
+Gesundheitskosten                                             532       
+Klein- und Mittelunternehmen                                  506       
+Schutzmaske                                                   497       
+Telearbeit                                                    495       
+Wirtschaftsentwicklung                                        481       
+Digitalisierung                                               471       
+Studie                                                        467       
+Verwaltungsverfahren                                          437       
+blank                                                       
+------------------------------------------------------------
+                                                            
+separator                                                   
+------------------------------------------------------------
+=========================================                   
+title                                                       
+------------------------------------------------------------
+PART 7: DIGITALIZATION & TECH TOPICS (WP19)                 
+separator                                                   
+------------------------------------------------------------
+=========================================                   
+blank                                                       
+------------------------------------------------------------
+                                                            
+Digital/Tech Topic                                            Questions 
+------------------------------------------------------------  ----------
+Digitalisierung                                               6415      
+Informationssicherheit                                        3153      
+Datenschutz                                                   2939      
+Internet                                                      2369      
+Digitale Medien                                               372       
+Datenschutzbeauftragter                                       175       
+Cyberkrieg                                                    160       
+Digitalfunk                                                   91        
+Digitales Rechtemanagement                                    87        
+Digitale Gesundheitsanwendung                                 79        
+Internet der Dinge                                            78        
+blank                                                       
+------------------------------------------------------------
+                                                            
+separator                                                   
+------------------------------------------------------------
+=========================================                   
+title                                                       
+------------------------------------------------------------
+PART 8: FINANCIAL & ECONOMIC TOPICS (WP19)                  
+separator                                                   
+------------------------------------------------------------
+=========================================                   
+blank                                                       
+------------------------------------------------------------
+                                                            
+Financial/Economic Topic                                      Questions 
+------------------------------------------------------------  ----------
+Bundesmittel                                                  17260     
+Wirtschaftsförderung                                          2998      
+Besteuerungsverfahren                                         2919      
+Finanzdienstleistungsaufsicht                                 2290      
+Kredit                                                        2128      
+Bank                                                          2085      
+Forschungsfinanzierung                                        2025      
+Steueraufkommen                                               2020      
+Finanzdienstleistung                                          1946      
+Finanzmarkt                                                   1859      
+Umsatzsteuer                                                  1664      
+Finanzverwaltung                                              1623      
+Steuerentlastung                                              1573      
+Steuerrecht                                                   1379      
+Einkommensteuer                                               1278      
+Elektrizitätswirtschaft                                       1237      
+Unternehmensbesteuerung                                       1195      
+Wirtschaftsentwicklung                                        1160      
+Europäische Wirtschafts- und Währungsunion                    1123      
+Landwirtschaft                                                1096      
+Internationale Wirtschaftsbeziehungen                         1043      
+Wirtschaftlichkeit                                            1037      
+Unternehmensfinanzierung                                      1001      
+Forstwirtschaft                                               931       
+Steuermindereinnahmen                                         861       
+Steuerbelastung                                               837       
+Landwirtschaftsfläche                                         749       
+Bankenaufsicht                                                730       
+Steuerumgehung                                                723       
+Versicherungswirtschaft                                       700       
+blank                                                       
+------------------------------------------------------------
+                                                            
+separator                                                   
+------------------------------------------------------------
+=========================================                   
+title                                                       
+------------------------------------------------------------
+PART 9: GOVERNMENT OVERSIGHT & TRANSPARENCY (WP19)          
+separator                                                   
+------------------------------------------------------------
+=========================================                   
+blank                                                       
+------------------------------------------------------------
+                                                            
+Oversight Topic                                               Questions 
+------------------------------------------------------------  ----------
+Programm der Bundesregierung                                  9776      
+Personalausstattung                                           6443      
+Evaluation                                                    4282      
+Externe Beratung                                              4130      
+Studie                                                        3022      
+Gesetzesfolgenabschätzung                                     2711      
+Politikberatung                                               2518      
+Gutachten                                                     2230      
+Baukosten                                                     2198      
+Beschaffung                                                   2170      
+Öffentlichkeitsarbeit der Bundesregierung                     2163      
+blank                                                       
+------------------------------------------------------------
+                                                            
+separator                                                   
+------------------------------------------------------------
+=========================================                   
+title                                                       
+------------------------------------------------------------
+PART 10: TOP 15 FDP QUESTIONERS (WP19)                      
+separator                                                   
+------------------------------------------------------------
+=========================================                   
+blank                                                       
+------------------------------------------------------------
+                                                            
+Person                                                        Total Ques
+------------------------------------------------------------  ----------
+Dr. Marcus Faber, MdB, FDP                                    3614      
+Dr. Jens Brandenburg (Rhein-Neckar), MdB, FDP                 3332      
+Reinhard Houben, MdB, FDP                                     3323      
+Ulla Ihnen, MdB, FDP                                          3240      
+Renata Alt, MdB, FDP                                          3111      
+Jens Beeck, MdB, FDP                                          3111      
+Markus Herbrand, MdB, FDP                                     3030      
+Olaf in der Beek, MdB, FDP                                    2865      
+Katrin Helling-Plahr, MdB, FDP                                2848      
+Dr. Marco Buschmann, MdB, FDP                                 2826      
+Matthias Seestern-Pauly, MdB, FDP                             2734      
+Katja Suding, MdB, FDP                                        2719      
+Otto Fricke, MdB, FDP                                         2647      
+Pascal Kober, MdB, FDP                                        2530      
+Grigorios Aggelidis, MdB, FDP                                 2521      
+blank                                                       
+------------------------------------------------------------
+                                                            
+separator                                                   
+------------------------------------------------------------
+=========================================                   
+title                                                       
+------------------------------------------------------------
+PART 11: SAMPLE QUESTION CONTENT                            
+separator                                                   
+------------------------------------------------------------
+=========================================                   
+blank                                                       
+------------------------------------------------------------
+                                                            
+section                                                     
+------------------------------------------------------------
+--- Sample COVID-19 Questions ---                           
+blank                                                       
+------------------------------------------------------------
+                                                            
+Question Title                                                Date      
+------------------------------------------------------------  ----------
+Digitalisierungspotenziale in der Frühkindlichen Bildung      2021-02-16
+
+Betriebsunterbrechungsversicherungen in der Corona-Pandemie   2020-08-28
+
+Drohende Insolvenzwelle und Folgen für die Banken             2021-01-08
+
+Nutzbarkeit der Stärken der luca App - Erweiterung von Öffnu  2021-04-06
+ngsstrategien                                                           
+
+Pandemiekonzepte in der frühkindlichen Bildung                2021-06-24
+
+Betrügerische Beantragung von Corona-Hilfen                   2021-03-17
+
+Beschaffung von Spritzen und Nadeln über die Europäische Uni  2021-03-02
+on                                                                      
+
+Bund-Länder-Strategie zum Ausschluss von der Kitabetreuung b  2020-08-27
+ei Erkältungssymptomen                                                  
+
+Wirtschaftshilfen in der Covid-19 Pandemie                    2021-06-21
+
+COVID-19 Antigen-Schnelltests                                 2020-12-11
+blank                                                       
+------------------------------------------------------------
+                                                            
+section                                                     
+------------------------------------------------------------
+--- Sample Digitalization Questions ---                     
+blank                                                       
+------------------------------------------------------------
+                                                            
+Question Title                                                Date      
+------------------------------------------------------------  ----------
+Dauerhafte Flexibilisierung und Digitalisierung der Ausbildu  2021-04-01
+ng innerhalb der Steuerverwaltung                                       
+
+Luftfrachtunternehmen in Deutschland - Standort und Wachstum  2018-09-28
+ sichern                                                                
+
+Neue digitale Kontrollen im Straßengüterverkehr durch das Bu  2021-03-16
+ndesamt für Güterverkehr (BAG)                                          
+
+Luftfrachtunternehmen in Deutschland - Standort und Wachstum  2018-09-28
+ sichern                                                                
+
+Sachstand zur Digitalisierung der Steuerverwaltung            2020-05-18
+
+Stand und Entwicklung der Digitalisierung des Bundes          2020-08-21
+
+Legal Tech in der Inkassoreform                               2019-11-19
+
+Digitalisierter Austausch von Willenserklärungen              2019-11-11
+
+Ergebnisse des Wohngipfels - Baukostensenkung und Fachkräfte  2018-10-11
+sicherung                                                               
+
+Rahmenbedingungen für Ladeinfrastruktur und Digitalisierung   2020-05-29
+blank                                                       
+------------------------------------------------------------
+                                                            
+section                                                     
+------------------------------------------------------------
+--- Sample Financial Oversight Questions ---                
+blank                                                       
+------------------------------------------------------------
+                                                            
+Question Title                                                Date      
+------------------------------------------------------------  ----------
+Raumluftfilter in Schulen                                     2021-03-24
+
+Meilensteine des Koalitionsvertrags zwischen CDU, CSU und SP  2019-03-26
+D zum Breitbandausbau - Stand der Dinge                                 
+
+Kriterien zur Förderung bundesweiter Schüler- und Jugendwett  2019-02-12
+bewerbe                                                                 
+
+1,5 Milliarden Euro für den Wald                              2020-10-23
+
+Abruf der Fördermittel des "Sofortprogramms Saubere Luft 201  2019-09-19
+7-2020" durch Städte und Kommunen im Jahr 2018 und im ersten            
+ Halbjahr 2019                                                          
+
+Glasfaserausbau in Deutschland durch innovative Verlegetechn  2020-02-28
+iken                                                                    
+
+Bundesjugendspiele attraktiver machen                         2019-08-01
+
+Effiziente und nachhaltige Bekämpfung der Fluchtursachen      2018-07-13
+
+Sachstand der Bund-Länder-Vereinbarung zum Digitalpakt        2018-02-21
+
+Blaue Biotechnologie fördern                                  2019-03-14
+blank                                                       
+------------------------------------------------------------
+                                                            
+separator                                                   
+------------------------------------------------------------
+=========================================                   
+title                                                       
+------------------------------------------------------------
+PART 12: OVERALL SUMMARY                                    
+separator                                                   
+------------------------------------------------------------
+=========================================                   
+blank                                                       
+------------------------------------------------------------
+                                                            
+stat                                                        
+------------------------------------------------------------
+Total FDP Kleine Anfragen (WP19): 132642                    
+stat                                                        
+------------------------------------------------------------
+Unique FDP questioners (WP19): 89                           
+stat                                                        
+------------------------------------------------------------
+Date range: 2017-11-07 to 2021-09-21                        
+blank                                                       
+------------------------------------------------------------
+                                                            

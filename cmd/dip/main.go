@@ -87,16 +87,18 @@ func main() {
 		if *wahlperiode == 0 {
 			return nil
 		}
-		w := dipclient.WahlperiodeFilter(*wahlperiode)
-		return &w
+		filter := make(dipclient.WahlperiodeFilter, 1)
+		filter[0] = *wahlperiode
+		return &filter
 	}
 
 	idFilterPtr := func() *dipclient.IDFilter {
 		if *fID == 0 {
 			return nil
 		}
-		f := dipclient.IDFilter(*fID)
-		return &f
+		filter := make(dipclient.IDFilter, 1)
+		filter[0] = *fID
+		return &filter
 	}
 
 	drucksacheFilterPtr := func() *dipclient.DrucksacheFilter {
@@ -119,8 +121,9 @@ func main() {
 		if *fDokumentnummer == "" {
 			return nil
 		}
-		f := dipclient.DokumentnummerFilter(*fDokumentnummer)
-		return &f
+		filter := make(dipclient.DokumentnummerFilter, 1)
+		filter[0] = *fDokumentnummer
+		return &filter
 	}
 
 	drucksachtypFilterPtr := func() *dipclient.DrucksachtypFilter {
@@ -135,8 +138,9 @@ func main() {
 		if *fFrageNummer == "" {
 			return nil
 		}
-		f := dipclient.FrageNummerFilter(*fFrageNummer)
-		return &f
+		filter := make(dipclient.FrageNummerFilter, 1)
+		filter[0] = *fFrageNummer
+		return &filter
 	}
 
 	zuordnungFilterPtr := func() *dipclient.ZuordnungFilter {
@@ -151,8 +155,9 @@ func main() {
 		if *fGesta == "" {
 			return nil
 		}
-		f := dipclient.GestaFilter(*fGesta)
-		return &f
+		filter := make(dipclient.GestaFilter, 1)
+		filter[0] = *fGesta
+		return &filter
 	} // Struct to hold all filter parameters
 
 	filters := filterParams{
