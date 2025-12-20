@@ -3,10 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
-	"flag"
-	"fmt"
 	"log"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -14,81 +11,27 @@ import (
 	db "github.com/Johanneslueke/dip-client/internal/database/gen/sqlite"
 	client "github.com/Johanneslueke/dip-client/internal/gen/v1.4"
 	"github.com/Johanneslueke/dip-client/internal/utility"
-	dipclient "github.com/Johanneslueke/dip-client/pkg/dip-client"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 	_ "modernc.org/sqlite"
 )
 
 func main() {
-	var (
-		baseURL       = flag.String("url", "https://search.dip.bundestag.de/api/v1", "API base URL")
-		apiKey        = flag.String("key", "", "API key")
-		dbPath        = flag.String("db", "dip.db", "SQLite database path")
-		limit         = flag.Int("limit", 0, "Maximum number of vorgangspositionen to fetch (0 = all)")
-		checkpointDir = flag.String("checkpoint-dir", ".checkpoints", "Directory to store checkpoints")
-		failedDir     = flag.String("failed-dir", ".failed", "Directory to store failed record IDs")
-		resume        = flag.Bool("resume", false, "Resume from last checkpoint")
-		end           = flag.String("end", "", "End date for sync (YYYY-MM-DD)")
-		wahlperiode   = flag.String("wahlperiode", "", "Filter by Wahlperiode numbers (comma-separated, e.g. '19,20' or empty = no filter)")
-		vorgangID     = flag.Int("vorgang-id", 0, "Filter by specific Vorgang ID (0 = no filter)")
-	)
-	flag.Parse()
+	// Parse configuration
+	config := utility.ParseSyncFlags("vorgangspositionen")
 
-	if *apiKey == "" {
-		*apiKey = os.Getenv("DIP_API_KEY")
-	}
-
-	if *apiKey == "" {
-		log.Fatal("API key required (use -key flag or DIP_API_KEY environment variable)")
-	}
-
-	dipClient, err := dipclient.New(dipclient.Config{
-		BaseURL: *baseURL,
-		APIKey:  *apiKey,
-	})
+	// Create sync context (handles all setup)
+	syncCtx, err := utility.NewSyncContext(config, 240)
 	if err != nil {
-		log.Fatalf("Failed to create API client: %v", err)
+		log.Fatal(err)
 	}
+	defer syncCtx.Close()
 
-	sqlDB, err := sql.Open("sqlite", *dbPath)
-	if err != nil {
-		log.Fatalf("Failed to open database: %v", err)
-	}
-	defer sqlDB.Close()
+	// Load checkpoint if resuming
+	datumEnd, _ := syncCtx.CheckpointMgr.LoadIfResume()
 
-	sqlDB.SetMaxOpenConns(24)
-	sqlDB.SetMaxIdleConns(24)
-	sqlDB.SetConnMaxLifetime(time.Hour)
-
-	if err := utility.RunMigrations(sqlDB); err != nil {
-		log.Fatalf("Failed to run migrations: %v", err)
-	}
-
-	queries := db.New(sqlDB)
-	ctx := context.Background()
-	//limiter := utility.NewRateLimiter(1, time.Minute)
-	progress := utility.NewProgressTracker(*limit)
-	failedTracker := utility.NewFailedRecordsTracker(*failedDir, "vorgangspositionen")
-
-	// Checkpoint and signal handling
-	var datumEnd *openapi_types.Date
-	var lastProcessedDate time.Time
-	interrupted := false
-
-	if *resume {
-		checkpoint, err := utility.LoadCheckpoint(*checkpointDir, "vorgangspositionen")
-		if err != nil {
-			log.Printf("Warning: Failed to load checkpoint: %v", err)
-		} else if checkpoint != nil {
-			lastProcessedDate = checkpoint.LastSyncDate
-			date := openapi_types.Date{Time: lastProcessedDate}
-			datumEnd = &date
-			log.Printf("Resuming from checkpoint: %s", lastProcessedDate.Format("2006-01-02"))
-		}
-	}
-
-	if *end != "" {
-		endTime, err := time.Parse("2006-01-02", *end)
+	// Parse end date if provided
+	if config.End != "" {
+		endTime, err := time.Parse("2006-01-02", config.End)
 		if err != nil {
 			log.Fatalf("Invalid end date format: %v", err)
 		}
@@ -96,69 +39,25 @@ func main() {
 		datumEnd = &date
 	}
 
-	signalHandler := utility.NewSignalHandler(
-		func() {
-			interrupted = true
-			if !lastProcessedDate.IsZero() {
-				if err := utility.SaveCheckpoint(*checkpointDir, "vorgangspositionen", lastProcessedDate); err != nil {
-					log.Printf("Error saving checkpoint: %v", err)
-				} else {
-					log.Printf("Checkpoint saved at %s", lastProcessedDate.Format("2006-01-02"))
-				}
+	// Run sync loop
+	err = syncCtx.SyncLoop(
+		// Fetch batch function
+		func(ctx context.Context, cursor *string) (*utility.BatchResponse, error) {
+			params := &client.GetVorgangspositionListParams{
+				Cursor:    cursor,
+				FDatumEnd: datumEnd,
 			}
-		},
-		nil,
-	)
-	defer signalHandler.Stop()
 
-	var cursor *string
-
-	// Log active filters
-	filters := []string{}
-	if datumEnd != nil {
-		filters = append(filters, fmt.Sprintf("datum-end=%s", datumEnd.Time.Format("2006-01-02")))
-	}
-	if *wahlperiode != "" {
-		filters = append(filters, fmt.Sprintf("wahlperiode=%s", *wahlperiode))
-	}
-	if *vorgangID > 0 {
-		filters = append(filters, fmt.Sprintf("vorgang-id=%d", *vorgangID))
-	}
-	if len(filters) > 0 {
-		log.Printf("Starting to fetch vorgangspositionen from API with filters: %s", strings.Join(filters, ", "))
-	} else {
-		log.Printf("Starting to fetch vorgangspositionen from API (no filters)...")
-	}
-
-	for {
-		// Check if interrupted
-		if signalHandler.IsInterrupted() || interrupted {
-			fmt.Println() // New line after progress updates
-			log.Printf("Interrupted after processing %d vorgangspositionen", progress.Total)
-			return
-		}
-
-		// if err := limiter.Wait(ctx); err != nil {
-		// 	log.Fatalf("Rate limiter error: %v", err)
-		// }
-
-		params := &client.GetVorgangspositionListParams{
-			Cursor:    cursor,
-			FDatumEnd: datumEnd,
-		}
-
-		// Add optional filters
-			if *wahlperiode != "" {
-				//split and convert to []WahlperiodeFilter if slice only contains one element use FWahlperiode if it contains multiple use FWahlperiodes
-				wpStrings := strings.Split(*wahlperiode, ",")
+			// Add optional filters
+			if config.Wahlperiode != "" {
+				wpStrings := strings.Split(config.Wahlperiode, ",")
 
 				if len(wpStrings) == 1 {
-					// parse single int
 					wpInt, err := strconv.Atoi(wpStrings[0])
 					if err != nil {
 						log.Fatalf("Invalid wahlperiode value: %v", err)
-					} 
-						
+					}
+
 					wpFilter := make([]int, 1)
 					wpFilter[0] = wpInt
 					params.FWahlperiode = &wpFilter
@@ -175,83 +74,68 @@ func main() {
 				}
 			}
 
-			if *vorgangID > 0 {
+			if config.VorgangID > 0 {
 				vorgangIds := make(client.IdFilter, 1)
-				vorgangIds[0] = *vorgangID
-				params.FId = &vorgangIds	
+				vorgangIds[0] = config.VorgangID
+				params.FId = &vorgangIds
 			}
 
-		resp, err := dipClient.GetVorgangspositionList(ctx, params)
+			resp, err := syncCtx.Client.GetVorgangspositionList(ctx, params)
+			if err != nil {
+				return nil, err
+			}
+
+			return &utility.BatchResponse{
+				Documents:    resp.Documents,
+				Cursor:       resp.Cursor,
+				NumFound:     int(resp.NumFound),
+				DocumentsLen: len(resp.Documents),
+			}, nil
+		},
+		// Store item function
+		storeVorgangsposition,
+		// Update checkpoint date function
+		updateVorgangspositionDate,
+		// Extract items function
+		func(docs interface{}) []interface{} {
+			vorgangspositionen := docs.([]client.Vorgangsposition)
+			items := make([]interface{}, len(vorgangspositionen))
+			for i, v := range vorgangspositionen {
+				items[i] = v
+			}
+			return items
+		},
+	)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Finalize (handles all cleanup and logging)
+	syncCtx.Finalize()
+}
+
+func updateVorgangspositionDate(ctx context.Context, q *db.Queries, item interface{}, checkpointMgr *utility.CheckpointManager) {
+	vorgangsposition := item.(client.Vorgangsposition)
+	if !vorgangsposition.Datum.Time.IsZero() {
+		datum, err := q.GetLatestVorgangspositionDatum(ctx)
 		if err != nil {
-			log.Fatalf("Failed to fetch vorgangspositionen: %v", err)
-		}
-
-		if len(resp.Documents) == 0 {
-			break
-		}
-
-		progress.Total += len(resp.Documents)
-		progress.PrintProgress(progress.Total, int(resp.NumFound))
-
-		for _, vorgangsposition := range resp.Documents {
-			storeVorgangsposition(ctx, queries, vorgangsposition, failedTracker)
-
-			// Track the last processed date for checkpoint
-			if vorgangsposition.Datum.After(lastProcessedDate) {
-				datum, err := queries.GetLatestVorgangspositionDatum(ctx)
-				if err != nil {
-					log.Printf("Warning: Failed to get latest vorgangsposition datum: %v", err)
-					lastProcessedDate = vorgangsposition.Aktualisiert
-				} else if t, ok := datum.(string); ok {
-					if parsedDate, err := time.Parse("2006-01-02", t); err == nil {
-						lastProcessedDate = parsedDate
-					} else {
-						lastProcessedDate = vorgangsposition.Aktualisiert
-					}
-				} else {
-					lastProcessedDate = vorgangsposition.Aktualisiert
-				}
-			}  
-
-			progress.Increment()
-
-			if *limit > 0 && progress.Total >= *limit {
-				fmt.Println() // New line before final message
-				log.Printf("Reached limit of %d vorgangspositionen", *limit)
-				goto done
+			log.Printf("Warning: Failed to get latest vorgangsposition datum: %v", err)
+			checkpointMgr.UpdateDate(vorgangsposition.Datum.Time)
+		} else if t, ok := datum.(string); ok {
+			if parsedDate, err := time.Parse("2006-01-02", t); err == nil {
+				checkpointMgr.UpdateDate(parsedDate)
+			} else {
+				checkpointMgr.UpdateDate(vorgangsposition.Datum.Time)
 			}
-		}
-
-		if resp.Cursor == "" {
-			break
-		}
-		cursor = &resp.Cursor
-	}
-
-done:
-	fmt.Println() // New line after progress updates
-	elapsed, rate := progress.GetStats()
-	log.Printf("Successfully stored %d vorgangspositionen in database %s (%.1f/sec, took %s)",
-		progress.Total, *dbPath, rate, elapsed.Round(time.Second))
-
-	// Save failed records if any
-	if failedTracker.Count() > 0 {
-		if err := failedTracker.Save(); err != nil {
-			log.Printf("Warning: Failed to save failed records: %v", err)
 		} else {
-			log.Printf("⚠️  %d records failed due to DB locks, saved to %s/vorgangspositionen.failed.json", failedTracker.Count(), *failedDir)
-		}
-	}
-
-	// Delete checkpoint on successful completion
-	if !interrupted && *resume {
-		if err := utility.DeleteCheckpoint(*checkpointDir, "vorgangspositionen"); err != nil {
-			log.Printf("Warning: Failed to delete checkpoint: %v", err)
+			checkpointMgr.UpdateDate(vorgangsposition.Datum.Time)
 		}
 	}
 }
 
-func storeVorgangsposition(ctx context.Context, q *db.Queries, vorgangsposition client.Vorgangsposition, failedTracker *utility.FailedRecordsTracker) {
+func storeVorgangsposition(ctx context.Context, q *db.Queries, item interface{}, failedTracker *utility.FailedRecordsTracker) {
+	vorgangsposition := item.(client.Vorgangsposition)
 	existing, err := q.GetVorgangsposition(ctx, vorgangsposition.Id)
 	if err != nil && err != sql.ErrNoRows {
 		failedTracker.RecordIfDBLocked(vorgangsposition.Id, "GetVorgangsposition", err)

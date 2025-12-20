@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"log"
+	"strconv"
+	"strings"
 	"time"
 
 	db "github.com/Johanneslueke/dip-client/internal/database/gen/sqlite"
@@ -44,6 +46,40 @@ func main() {
 			params := &client.GetPlenarprotokollListParams{
 				Cursor:    cursor,
 				FDatumEnd: datumEnd,
+			}
+
+			// Add optional filters
+			if config.Wahlperiode != "" {
+				//split and convert to []WahlperiodeFilter if slice only contains one element use FWahlperiode if it contains multiple use FWahlperiodes
+				wpStrings := strings.Split(config.Wahlperiode, ",")
+
+				if len(wpStrings) == 1 {
+					// parse single int
+					wpInt, err := strconv.Atoi(wpStrings[0])
+					if err != nil {
+						log.Fatalf("Invalid wahlperiode value: %v", err)
+					} 
+						
+					wpFilter := make([]int, 1)
+					wpFilter[0] = wpInt
+					params.FWahlperiode = &wpFilter
+				} else {
+					wpFilters := make(client.WahlperiodeFilter, 0, len(wpStrings))
+					for _, wpStr := range wpStrings {
+						wpInt, err := strconv.Atoi(wpStr)
+						if err != nil {
+							log.Fatalf("Invalid wahlperiode value: %v", err)
+						}
+						wpFilters = append(wpFilters, wpInt)
+					}
+					params.FWahlperiode = &wpFilters
+				}
+			}
+
+			if config.VorgangID > 0 {
+				vorgangIds := make(client.IdFilter, 1)
+				vorgangIds[0] = config.VorgangID
+				params.FId = &vorgangIds	
 			}
 
 			resp, err := syncCtx.Client.GetPlenarprotokollList(ctx, params)
